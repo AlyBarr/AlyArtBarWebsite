@@ -1,0 +1,15 @@
+body {
+  margin: 0;
+  background: black;
+  color: #8fffd1; /* ocean-mint vibe */
+  font-family: "Courier New", monospace;
+}
+
+#terminal {
+  padding: 2rem;
+  white-space: pre-wrap;
+}
+
+.hidden {
+  display: none;
+}
