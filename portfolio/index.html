@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="Alyssa Barrientos — Technical Artist specializing in procedural systems, tools, and pipelines." />
+  <title>Alyssa Barrientos · AlyArtBar</title>
+
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,600;0,700;1,300;1,600&family=Fira+Code:wght@400;500&family=DM+Sans:wght@300;400&display=swap" rel="stylesheet" />
+
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+  <!-- Custom cursor -->
+  <div id="cursor" aria-hidden="true"></div>
+  <div id="cursor-trail" aria-hidden="true"></div>
+
+  <!-- Grain overlay -->
+  <div class="grain" aria-hidden="true"></div>
+
+  <!-- Starfield -->
+  <canvas id="starfield" aria-hidden="true"></canvas>
+
+  <!-- ============================================================
+       TERMINAL INTRO
+  ============================================================ -->
+  <div id="terminal-intro" role="presentation">
+    <div class="term-window">
+      <div class="term-bar">
+        <span class="term-dot r"></span>
+        <span class="term-dot y"></span>
+        <span class="term-dot g"></span>
+        <span class="term-title">alyartbar — init</span>
+      </div>
+      <div class="term-body" id="term-body"></div>
+    </div>
+    <button class="term-skip" id="term-skip" aria-label="Skip intro">
+      press any key to skip
+    </button>
+  </div>
+
+  <!-- ============================================================
+       NAV
+  ============================================================ -->
+  <header id="site-nav" role="banner">
+    <nav class="nav-inner" aria-label="Main navigation">
+      <a href="#home" class="nav-brand" aria-label="AlyArtBar home">
+        <span class="brand-initials">AB</span>
+        <span class="brand-name">AlyArtBar</span>
+      </a>
+      <button class="nav-toggle" id="nav-toggle" aria-label="Toggle navigation" aria-expanded="false">
+        <span></span><span></span><span></span>
+      </button>
+      <ul class="nav-links" id="nav-links" role="list">
+        <li><a href="#about">About</a></li>
+        <li><a href="#projects">Projects</a></li>
+        <li><a href="#rnd">R&amp;D</a></li>
+        <li><a href="#contact">Contact</a></li>
+        <li><a href="assets/resume.pdf" class="nav-resume" target="_blank" rel="noopener">Resume ↗</a></li>
+      </ul>
+    </nav>
+  </header>
+
+  <main id="home">
+
+    <!-- ============================================================
+         HERO
+    ============================================================ -->
+    <section class="hero" aria-label="Introduction">
+      <!-- Ambient orbs -->
+      <div class="orb orb-1" aria-hidden="true"></div>
+      <div class="orb orb-2" aria-hidden="true"></div>
+      <div class="orb orb-3" aria-hidden="true"></div>
+
+      <div class="hero-content">
+        <p class="hero-eyebrow">// cs student · technical artist · pipeline explorer</p>
+
+        <h1 class="hero-name">
+          Alyssa<br>Barrientos
+        </h1>
+        <p class="hero-subname">AlyArtBar</p>
+
+        <div class="hero-divider" aria-hidden="true"></div>
+
+        <div class="hero-tags" aria-label="Specializations">
+          <span class="tag">procedural systems</span>
+          <span class="tag">tools &amp; pipelines</span>
+          <span class="tag">technical art</span>
+          <span class="tag">USD</span>
+        </div>
+
+        <p class="hero-tagline">
+          I build the systems artists live in —<br>
+          and the art that systems make possible.
+        </p>
+
+        <div class="hero-ctas">
+          <a href="#projects" class="btn btn-primary">View Projects</a>
+          <a href="assets/resume.pdf" class="btn btn-ghost" target="_blank" rel="noopener">Resume ↗</a>
+          <a href="#contact" class="hero-contact-link">Get in touch →</a>
+        </div>
+      </div>
+
+      <div class="scroll-hint" aria-hidden="true">
+        <span class="scroll-label">scroll</span>
+        <div class="scroll-line"></div>
+      </div>
+    </section>
+
+    <!-- ============================================================
+         DISCIPLINE STRIP
+    ============================================================ -->
+    <div class="marquee-wrap" aria-hidden="true">
+      <div class="marquee-track">
+        <span class="marquee-inner">
+          Houdini ✦ Python ✦ USD Pipelines ✦ Procedural Systems ✦ Maya ✦ C++ ✦
+          Simulation ✦ Tool Development ✦ Unreal Engine ✦ Rendering ✦ VFX ✦
+          Technical Art ✦ GLSL ✦ Pipeline Design ✦ Houdini ✦ Python ✦ USD Pipelines ✦
+          Procedural Systems ✦ Maya ✦ C++ ✦ Simulation ✦ Tool Development ✦
+          Unreal Engine ✦ Rendering ✦ VFX ✦ Technical Art ✦ GLSL ✦ Pipeline Design ✦
+        </span>
+      </div>
+    </div>
+
+    <!-- ============================================================
+         ABOUT
+    ============================================================ -->
+    <section id="about" class="section" aria-label="About">
+      <div class="section-inner about-grid">
+
+        <div class="about-visual reveal">
+          <!-- Replace with <img> when you have a photo -->
+          <div class="about-sigil" aria-label="Decorative sigil">
+            <svg viewBox="0 0 200 200" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+              <circle cx="100" cy="100" r="90" stroke="var(--c-depth)" stroke-width="1"/>
+              <circle cx="100" cy="100" r="70" stroke="var(--c-current)" stroke-width="0.5" stroke-dasharray="4 6"/>
+              <circle cx="100" cy="100" r="50" stroke="var(--c-biolume)" stroke-width="0.5" opacity="0.4"/>
+              <circle cx="100" cy="100" r="30" stroke="var(--c-biolume)" stroke-width="1" opacity="0.2"/>
+              <circle cx="100" cy="100" r="4" fill="var(--c-biolume)" opacity="0.6"/>
+              <!-- Rune marks -->
+              <line x1="100" y1="10" x2="100" y2="30" stroke="var(--c-biolume)" stroke-width="1" opacity="0.5"/>
+              <line x1="100" y1="170" x2="100" y2="190" stroke="var(--c-biolume)" stroke-width="1" opacity="0.5"/>
+              <line x1="10" y1="100" x2="30" y2="100" stroke="var(--c-biolume)" stroke-width="1" opacity="0.5"/>
+              <line x1="170" y1="100" x2="190" y2="100" stroke="var(--c-biolume)" stroke-width="1" opacity="0.5"/>
+              <text x="100" y="104" text-anchor="middle" font-family="Fira Code" font-size="9" fill="var(--c-mist)" opacity="0.5">AB</text>
+            </svg>
+          </div>
+          <div class="about-sigil-glow" aria-hidden="true"></div>
+        </div>
+
+        <div class="about-text">
+          <div class="reveal">
+            <p class="section-eyebrow">// 01 — About</p>
+            <h2 class="section-title">Building at the<br>edge of art &amp; code.</h2>
+            <div class="section-rule" aria-hidden="true"></div>
+          </div>
+
+          <div class="reveal about-body">
+            <p>
+              I'm a computer science student specializing at the intersection of
+              engineering and visual craft. My work lives in the space where a
+              Python script meets a particle simulation — where a USD pipeline
+              turns a 40-step process into one.
+            </p>
+            <p>
+              I build tools that give artists more time to be artists. I write
+              systems that make procedural worlds feel handmade. I'm drawn to the
+              parts of production that nobody else wants to touch — and I find them
+              fascinating.
+            </p>
+            <p>
+              Currently exploring procedural geometry in Houdini, USD composition
+              and non-destructive pipeline design, real-time rendering workflows,
+              and anything that makes a computer say something beautiful.
+            </p>
+            <p class="about-status">
+              <span class="status-dot live" aria-hidden="true"></span>
+              Early career — always building. Open to internships &amp; collaborative projects.
+            </p>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- ============================================================
+         PROJECTS
+    ============================================================ -->
+    <section id="projects" class="section section-dark" aria-label="Projects">
+      <div class="section-inner">
+        <div class="reveal section-header">
+          <p class="section-eyebrow">// 02 — Projects</p>
+          <h2 class="section-title">Selected Work</h2>
+          <div class="section-rule" aria-hidden="true"></div>
+        </div>
+
+        <!-- Featured projects injected by JS -->
+        <div id="featured-projects" class="featured-projects"></div>
+
+        <!-- Project grid injected by JS -->
+        <h3 class="grid-subheader reveal">More Projects</h3>
+        <div id="project-grid" class="project-grid"></div>
+      </div>
+    </section>
+
+    <!-- ============================================================
+         R&D LAB
+    ============================================================ -->
+    <section id="rnd" class="section section-rnd" aria-label="Technical Research and Development">
+      <div class="section-inner">
+        <div class="reveal section-header">
+          <p class="section-eyebrow section-eyebrow--nebula">// 03 — R&amp;D Lab</p>
+          <h2 class="section-title">Experiments &amp; Tools</h2>
+          <div class="section-rule section-rule--nebula" aria-hidden="true"></div>
+          <p class="rnd-intro">
+            Active experiments in tool development, pipeline research, and rendering exploration.
+            Honest about what works, what doesn't, and what's next.
+          </p>
+        </div>
+
+        <!-- R&D entries injected by JS -->
+        <div id="rnd-list" class="rnd-list"></div>
+      </div>
+    </section>
+
+    <!-- ============================================================
+         CONTACT
+    ============================================================ -->
+    <section id="contact" class="section section-contact" aria-label="Contact">
+      <div class="section-inner contact-inner">
+        <div class="reveal">
+          <p class="section-eyebrow">// 04 — Contact</p>
+          <h2 class="section-title contact-title">Let's build<br>something.</h2>
+          <div class="section-rule" aria-hidden="true"></div>
+          <p class="contact-sub">
+            Open to internships, collaborations, and conversations about
+            technical art, pipelines, and procedural systems.
+          </p>
+        </div>
+
+        <div class="contact-links reveal">
+          <a href="mailto:hello@alyartbar.com" class="contact-link">
+            <span class="contact-icon" aria-hidden="true">✉</span>
+            hello@alyartbar.com
+          </a>
+          <a href="https://linkedin.com/in/alyssabarrientos" class="contact-link" target="_blank" rel="noopener">
+            <span class="contact-icon" aria-hidden="true">in</span>
+            LinkedIn
+          </a>
+          <a href="https://github.com/alyartbar" class="contact-link" target="_blank" rel="noopener">
+            <span class="contact-icon" aria-hidden="true">&lt;/&gt;</span>
+            GitHub
+          </a>
+        </div>
+
+        <!-- Optional Formspree form — replace ACTION with your Formspree endpoint -->
+        <form class="contact-form reveal" action="https://formspree.io/f/YOUR_ID" method="POST" id="contact-form">
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label" for="name">Name</label>
+              <input class="form-input" type="text" id="name" name="name" placeholder="Your name" required autocomplete="name" />
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="email">Email</label>
+              <input class="form-input" type="email" id="email" name="email" placeholder="your@email.com" required autocomplete="email" />
+            </div>
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="message">Message</label>
+            <textarea class="form-input form-textarea" id="message" name="message" placeholder="Tell me about your project or opportunity..." required></textarea>
+          </div>
+          <button class="btn btn-primary" type="submit">Send Message</button>
+          <p class="form-note" id="form-status" aria-live="polite"></p>
+        </form>
+
+      </div>
+    </section>
+
+  </main>
+
+  <!-- ============================================================
+       FOOTER
+  ============================================================ -->
+  <footer class="site-footer">
+    <p class="footer-text">
+      designed &amp; built by <span class="footer-accent">alyssa barrientos</span>
+      · alyartbar · <span id="footer-year"></span>
+    </p>
+  </footer>
+
+  <script src="data/projects.js"></script>
+  <script src="main.js"></script>
+</body>
+</html>
