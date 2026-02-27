@@ -1,0 +1,10 @@
+/* ═══════════════════════════════════════════
+   phase4.css — Phase 4 (styles injected by phase4.js)
+   This file is intentionally minimal.
+═══════════════════════════════════════════ */
+
+/* Fallback canvas rule in case JS hasn't run yet */
+#webgl-canvas {
+  position: fixed; inset: 0; z-index: 0;
+  pointer-events: none; opacity: 0;
+}

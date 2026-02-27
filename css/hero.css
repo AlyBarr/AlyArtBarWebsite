@@ -1,0 +1,156 @@
+/* ═══════════════════════════════════════════
+   hero.css — Phase 2 + 3 Hero Section
+═══════════════════════════════════════════ */
+.hero {
+  position: relative; z-index: 2;
+  min-height: 100vh;
+  display: flex; align-items: center;
+  padding: 9rem 3rem 6rem;
+  overflow: hidden;
+}
+
+/* Ambient orbs */
+.orb {
+  position: absolute; border-radius: 50%;
+  filter: blur(100px); pointer-events: none; z-index: 0;
+}
+.orb-1 {
+  width: 60vw; height: 60vw; max-width: 800px;
+  top: -20%; left: -20%;
+  background: radial-gradient(circle, rgba(12,34,54,0.7) 0%, transparent 70%);
+  animation: orb-1 20s ease-in-out infinite alternate;
+}
+.orb-2 {
+  width: 40vw; height: 40vw; max-width: 550px;
+  bottom: -15%; right: -12%;
+  background: radial-gradient(circle, rgba(29,136,112,0.2) 0%, transparent 70%);
+  animation: orb-2 25s ease-in-out infinite alternate;
+}
+.orb-3 {
+  width: 28vw; height: 28vw; max-width: 380px;
+  top: 35%; left: 52%;
+  background: radial-gradient(circle, rgba(61,255,208,0.06) 0%, transparent 70%);
+  animation: orb-3 16s ease-in-out infinite alternate;
+}
+@keyframes orb-1 { to { transform: translate(4%,  5%) scale(1.05); } }
+@keyframes orb-2 { to { transform: translate(-5%,-4%) scale(1.07); } }
+@keyframes orb-3 { to { transform: translate(-10%,8%) scale(0.94); } }
+
+/* Phase 3: bioluminescent particles */
+.hero-particle {
+  position: absolute; border-radius: 50%;
+  background: var(--c-biolume);
+  box-shadow: 0 0 6px var(--c-biolume);
+  pointer-events: none; z-index: 1;
+  animation: particle-float var(--p-dur,8s) ease-in-out infinite var(--p-del,0s);
+}
+@keyframes particle-float {
+  0%,100% { transform: translate(0,0) scale(1); opacity: var(--p-op, 0.3); }
+  33%  { transform: translate(var(--p-x,10px), var(--p-y,-15px)) scale(1.3); opacity: calc(var(--p-op,0.3)*1.5); }
+  66%  { transform: translate(calc(var(--p-x,10px)*-0.5), var(--p-y2,-8px)) scale(0.8); opacity: calc(var(--p-op,0.3)*0.5); }
+}
+
+/* Hero content */
+.hero-body { position: relative; z-index: 2; max-width: 960px; }
+
+.hero-eyebrow {
+  font-family: var(--font-mono); font-size: var(--t-sm);
+  letter-spacing: 0.28em; color: var(--c-biolume); text-transform: lowercase;
+  margin-bottom: 1.2rem;
+  opacity: 0; animation: fade-up 0.7s var(--ease) 0.1s forwards;
+}
+.hero-name {
+  font-family: var(--font-serif); font-size: var(--t-hero);
+  font-weight: 700; line-height: 0.92; letter-spacing: -0.01em;
+  display: flex; flex-direction: column;
+  margin-bottom: 0.5rem;
+  opacity: 0; animation: fade-up 0.8s var(--ease) 0.25s forwards;
+}
+.name-first {
+  background: linear-gradient(140deg, var(--c-star) 0%, var(--c-biolume-soft) 100%);
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+}
+.name-last {
+  background: linear-gradient(140deg, var(--c-biolume-soft) 0%, var(--c-biolume) 100%);
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+}
+.hero-alias {
+  font-family: var(--font-serif); font-style: italic; font-weight: 300;
+  font-size: clamp(1rem, 2vw, 1.4rem); color: var(--c-mist);
+  margin-bottom: 1.5rem;
+  opacity: 0; animation: fade-up 0.7s var(--ease) 0.38s forwards;
+}
+.hero-rule {
+  width: 56px; height: 1.5px;
+  background: linear-gradient(to right, var(--c-biolume), transparent);
+  margin-bottom: 1.5rem;
+  opacity: 0; animation: fade-up 0.6s var(--ease) 0.5s forwards;
+}
+.hero-chips {
+  display: flex; flex-wrap: wrap; gap: 0.45rem;
+  margin-bottom: 1.5rem;
+  opacity: 0; animation: fade-up 0.7s var(--ease) 0.6s forwards;
+}
+.chip {
+  font-family: var(--font-mono); font-size: var(--t-xs);
+  letter-spacing: 0.1em; color: var(--c-biolume-soft);
+  border: 1px solid var(--c-deep); border-radius: var(--radius);
+  padding: 0.22rem 0.65rem; background: rgba(12,34,54,0.5);
+  transition: border-color var(--fast), color var(--fast),
+              box-shadow var(--fast), transform var(--fast);
+}
+.chip:hover {
+  border-color: var(--c-biolume); color: var(--c-biolume);
+  box-shadow: 0 0 12px rgba(61,255,208,0.2);
+  transform: translateY(-2px);
+}
+.hero-mission {
+  font-family: var(--font-serif); font-size: clamp(1.05rem, 2vw, 1.45rem);
+  font-weight: 300; line-height: 1.45; color: var(--c-mist);
+  margin-bottom: 0.5rem;
+  opacity: 0; animation: fade-up 0.7s var(--ease) 0.72s forwards;
+}
+.hero-tagline {
+  font-family: var(--font-mono); font-size: var(--t-sm);
+  letter-spacing: 0.22em; text-transform: uppercase; color: var(--c-teal);
+  margin-bottom: 2rem;
+  opacity: 0; animation: fade-up 0.7s var(--ease) 0.84s forwards;
+}
+.hero-actions {
+  display: flex; flex-wrap: wrap; align-items: center; gap: 1rem;
+  opacity: 0; animation: fade-up 0.7s var(--ease) 0.96s forwards;
+}
+.hero-text-link {
+  font-family: var(--font-mono); font-size: var(--t-sm);
+  letter-spacing: 0.12em; color: var(--c-mist);
+  text-decoration: none; transition: color var(--fast);
+}
+.hero-text-link:hover { color: var(--c-biolume); }
+
+/* Scroll hint */
+.hero-scroll {
+  position: absolute; bottom: 2.5rem; left: 3rem;
+  display: flex; flex-direction: column; align-items: flex-start; gap: 0.45rem;
+  opacity: 0; animation: fade-up 0.6s var(--ease) 1.2s forwards;
+}
+.scroll-word {
+  font-family: var(--font-mono); font-size: var(--t-xs);
+  letter-spacing: 0.3em; text-transform: uppercase; color: var(--c-ghost);
+}
+.scroll-line {
+  display: block; width: 1px; height: 44px;
+  background: linear-gradient(to bottom, var(--c-teal), transparent);
+  animation: scroll-pulse 2.5s ease-in-out infinite;
+}
+@keyframes scroll-pulse { 50% { opacity: 0.25; transform: scaleY(0.7); } }
+
+@keyframes fade-up {
+  from { opacity: 0; transform: translateY(16px); }
+  to   { opacity: 1; transform: none; }
+}
+
+@media (max-width: 720px) {
+  .hero { padding: 7rem 1.5rem 5rem; }
+  .hero-scroll { left: 1.5rem; }
+  .hero-actions { flex-direction: column; align-items: flex-start; }
+}

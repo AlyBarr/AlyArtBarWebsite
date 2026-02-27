@@ -1,0 +1,54 @@
+/* ═══════════════════════════════════════════
+   tokens.css — Design System Variables
+   AlyArtBar Portfolio
+═══════════════════════════════════════════ */
+:root {
+  /* ── Color: Foundation ── */
+  --c-void:         #020810;
+  --c-abyss:        #050e1c;
+  --c-trench:       #091828;
+  --c-deep:         #0c2236;
+  --c-ocean:        #103655;
+  --c-teal:         #1a6070;
+  --c-thermal:      #1d8870;
+
+  /* ── Color: Accents ── */
+  --c-biolume:      #3dffd0;   /* primary glow — use sparingly */
+  --c-biolume-soft: #7ee8d8;   /* secondary teal */
+  --c-nebula:       #9d78f5;   /* R&D section only */
+  --c-amber:        #f0a050;   /* WIP badges */
+
+  /* ── Color: Text ── */
+  --c-star:         #e6f3f8;   /* primary text */
+  --c-mist:         #87afc4;   /* body / secondary */
+  --c-ghost:        #3e5f72;   /* disabled / subtle */
+
+  /* ── Typography ── */
+  --font-serif:     'Cormorant Garamond', Georgia, serif;
+  --font-mono:      'Fira Code', 'Courier New', monospace;
+  --font-sans:      'DM Sans', system-ui, sans-serif;
+
+  /* ── Type Scale ── */
+  --t-hero:   clamp(3rem, 8.5vw, 7.5rem);
+  --t-xl:     clamp(1.9rem, 4vw, 3.2rem);
+  --t-lg:     clamp(1.1rem, 2vw, 1.55rem);
+  --t-md:     clamp(0.88rem, 1vw, 1rem);
+  --t-sm:     0.72rem;
+  --t-xs:     0.62rem;
+
+  /* ── Spacing ── */
+  --s1: 0.5rem;   --s2: 1rem;    --s3: 1.5rem;
+  --s4: 2rem;     --s6: 3rem;    --s8: 4rem;
+  --s12: 6rem;    --s16: 8rem;
+
+  /* ── Motion ── */
+  --ease:     cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-in:  cubic-bezier(0.4, 0, 1, 1);
+  --fast:     160ms;
+  --mid:      340ms;
+  --slow:     700ms;
+
+  /* ── Shape ── */
+  --radius:   5px;
+  --radius-lg: 10px;
+}
