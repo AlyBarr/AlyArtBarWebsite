@@ -1,14 +1,32 @@
 /* ═══════════════════════════════════════════════════════
-   data/projects.js — YOUR CONTENT
-   Edit this file to update projects on the site.
+   data/projects.js — PROJECTS CONTENT
+   Editing this file will update the website's projects.
    
    featured: true  → large alternating row (max 2–3)
    featured: false → smaller grid card
-   image: ""       → shows placeholder until you add one
-   image: "assets/images/filename.jpg" → your image
+   image: ""       → shows placeholder until image added
+   image: "assets/images/filename.jpg" → example image
 ═══════════════════════════════════════════════════════ */
 const PROJECTS = [
   {
+     id: "maya-pipeline-tools",
+     featured: true,
+     category: "Pipeline & Tools",
+     title: "Maya Pipeline Tools",
+     oneliner: "Production-grade Scene Validator and Asset Publisher for Maya — built to mirror studio TD conventions.",
+     bullets: [
+       "Scene Validator: checks geometry, naming, transforms, materials, and scene units with a threaded PySide2 UI that never freezes",
+       "Asset Publisher: copies files to a versioned directory, writes a JSON manifest, exports a USD stub, and commits a semantic version tag to Git",
+       "Graceful degradation — tools run in demo mode without Maya, and fall back to a plain-text USD stub if usd-core is missing"
+     ],
+     tools: ["Python", "Maya API", "PySide2", "OpenUSD", "Git"],
+     image: "",
+     links: [
+       { label: "GitHub", url: "https://github.com/AlyBarr/AssetMayaTooling" },
+       { label: "Docs",   url: "pipeline-tools.html" }
+     ]
+   },
+   {
     id: "proc-terrain",
     featured: true,
     category: "Procedural Systems",
@@ -24,24 +42,6 @@ const PROJECTS = [
     links: [
       { label: "GitHub", url: "#" },
       { label: "Video",  url: "#" }
-    ]
-  },
-  {
-    id: "usd-pipeline",
-    featured: true,
-    category: "Pipeline & Tools",
-    title: "USD Asset Pipeline Tool",
-    oneliner: "A Python tool for batch-exporting and validating assets into a USD-based pipeline.",
-    bullets: [
-      "Built Maya-to-USD export scripts with custom metadata tagging for downstream consumption",
-      "Wrote a validation layer that checks asset structure and reports errors before export",
-      "Reduced export iteration time by parallelizing asset processing"
-    ],
-    tools: ["Python", "USD", "Maya", "PyQt"],
-    image: "",
-    links: [
-      { label: "GitHub",  url: "#" },
-      { label: "Writeup", url: "#" }
     ]
   },
   {
@@ -90,6 +90,16 @@ const PROJECTS = [
 ═══════════════════════════════════════════════════════ */
 const RND_ENTRIES = [
   {
+     status: "live",
+     title: "Maya Pipeline Tools — Scene Validator & Asset Publisher",
+     hypothesis: "Two production-grade tools covering the full validate → publish → version pipeline could be built in pure Python with no proprietary dependencies.",
+     finding: "Both ship. Validator catches geo, naming, transform, and material issues. Publisher handles file copy, USD export, JSON manifest, and Git tagging in one click.",
+     links: [
+       { label: "GitHub", url: "https://github.com/AlyBarr/AssetMayaTooling" },
+       { label: "Docs",   url: "pipeline-tools.html" }
+     ]
+   },
+   {
     status: "live",
     title: "Batch Asset Validator",
     hypothesis: "A lightweight Python validator could catch 90% of common USD/Maya errors before TD review.",
