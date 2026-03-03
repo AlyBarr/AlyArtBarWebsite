@@ -313,16 +313,23 @@
   </footer>
 
   <!-- Scripts — order matters -->
+  <!-- Intro + cursor first (your CSS hides the native cursor) -->
+  <script src="js/terminal.js"></script>
+  <script src="js/cursor.js"></script>
+
   <script src="js/nav.js"></script>
   <script src="js/parallax.js"></script>
   <script src="js/particles.js"></script>
-  
+  <script src="js/stars.js"></script>
+
+  <script src="data/projects.js"></script>
   <script src="js/projects.js"></script>
+  <script src="data/skills.js"></script>
   <script src="js/constellation.js"></script>
   <script src="js/rnd.js"></script>
   <script src="js/contact.js"></script>
   <script src="js/phase4.js"></script>
-  
+
   <!-- put reveal LAST so it can observe injected cards -->
   <script src="js/reveal.js"></script>
   <script>

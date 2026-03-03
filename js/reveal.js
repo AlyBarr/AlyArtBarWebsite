@@ -54,5 +54,13 @@
     }
   });
 
-  mo.observe(document.body, { childList: true, subtree: true });
+  const startMO = () => {
+    const target = document.body || document.documentElement;
+    mo.observe(target, { childList: true, subtree: true });
+  };
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", startMO, { once: true });
+  } else {
+    startMO();
+  }
 })();

@@ -15,6 +15,12 @@
 
   RND_ENTRIES.forEach(entry => {
     const cfg = statusConfig[entry.status] || statusConfig.wip;
+
+    // Support either key name: `artifacts` (preferred) or legacy `links`
+    const links = Array.isArray(entry.artifacts) ? entry.artifacts
+                : Array.isArray(entry.links) ? entry.links
+                : [];
+
     const row = document.createElement('div');
     row.className = 'rnd-entry reveal';
 
@@ -24,12 +30,12 @@
         ${cfg.label}
       </div>
       <div class="rnd-body">
-        <h3 class="rnd-title">${entry.title}</h3>
-        <p class="rnd-hypothesis">${entry.hypothesis}</p>
-        <p class="rnd-finding">${entry.finding}</p>
-        ${entry.links.length
+        <h3 class="rnd-title">${entry.title || ''}</h3>
+        <p class="rnd-hypothesis">${entry.hypothesis || ''}</p>
+        <p class="rnd-finding">${entry.finding || ''}</p>
+        ${links.length
           ? `<div class="rnd-artifacts">
-               ${entry.links.map(l =>
+               ${links.map(l =>
                  `<a href="${l.url}" class="rnd-artifact-link" target="_blank" rel="noopener">↗ ${l.label}</a>`
                ).join('')}
              </div>`
