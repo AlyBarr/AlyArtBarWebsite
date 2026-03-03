@@ -1,0 +1,1342 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="Python Pipeline Tools — Scene Validator & Asset Publisher. Production-grade TD tools by Alyssa Barrientos." />
+  <title>Pipeline Tools · AlyArtBar</title>
+
+  <!-- Same fonts as portfolio -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,600;0,700;1,300&family=Fira+Code:wght@400;500&family=DM+Sans:ital,wght@0,300;0,400;1,300&display=swap" rel="stylesheet" />
+
+<style>
+/* =============================================================
+   AlyArtBar Design System — Tokens (mirrors tokens.css)
+   ============================================================= */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; }
+img, svg { display: block; max-width: 100%; }
+
+:root {
+  --c-void:     #020810;
+  --c-abyss:    #060f1e;
+  --c-trench:   #0b1f36;
+  --c-depth:    #0f3050;
+  --c-current:  #1a5c72;
+  --c-thermal:  #1f8a7a;
+  --c-biolume:  #3dffd0;
+  --c-seafoam:  #7eeedd;
+  --c-nebula:   #a78bfa;
+  --c-star:     #e8f4f8;
+  --c-mist:     #8ab0c4;
+  --c-ghost:    #3d5a6a;
+  --c-amber:    #f0a050;
+
+  --font-display: 'Cormorant Garamond', Georgia, serif;
+  --font-mono:    'Fira Code', 'Courier New', monospace;
+  --font-body:    'DM Sans', system-ui, sans-serif;
+
+  --text-hero:    clamp(3rem, 8vw, 7rem);
+  --text-display: clamp(1.8rem, 4vw, 3rem);
+  --text-title:   clamp(1.1rem, 2vw, 1.5rem);
+  --text-body:    clamp(0.88rem, 1vw, 1rem);
+  --text-label:   0.7rem;
+  --text-micro:   0.62rem;
+
+  --space-xs:  0.5rem;
+  --space-sm:  1rem;
+  --space-md:  2rem;
+  --space-lg:  4rem;
+  --space-xl:  7rem;
+
+  --radius-sm: 3px;
+  --radius-md: 6px;
+
+  --ease-out:  cubic-bezier(0.16, 1, 0.3, 1);
+  --dur-micro: 180ms;
+  --dur-ui:    350ms;
+  --dur-reveal:700ms;
+}
+
+/* =============================================================
+   BASE — mirrors base.css
+   ============================================================= */
+body {
+  background: var(--c-void);
+  color: var(--c-star);
+  font-family: var(--font-body);
+  font-weight: 300;
+  font-size: var(--text-body);
+  line-height: 1.75;
+  overflow-x: hidden;
+  cursor: none;
+}
+
+/* Grain overlay */
+.grain {
+  position: fixed; inset: 0; z-index: 1;
+  pointer-events: none;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  background-size: 200px 200px;
+  opacity: 0.032;
+  mix-blend-mode: overlay;
+}
+
+/* Starfield */
+#stars {
+  position: fixed; inset: 0; z-index: 0;
+  pointer-events: none;
+}
+
+/* Cursor */
+#cursor-ring, #cursor-dot {
+  position: fixed; z-index: 9999;
+  border-radius: 50%;
+  pointer-events: none;
+  transform: translate(-50%, -50%);
+  transition: width var(--dur-micro), height var(--dur-micro);
+}
+#cursor-ring {
+  width: 28px; height: 28px;
+  border: 1px solid rgba(61,255,208,0.4);
+}
+#cursor-dot {
+  width: 6px; height: 6px;
+  background: var(--c-biolume);
+  box-shadow: 0 0 8px rgba(61,255,208,0.6);
+}
+#cursor-ring.hover { width: 44px; height: 44px; border-color: rgba(61,255,208,0.6); }
+
+/* Scrollbar */
+::-webkit-scrollbar { width: 4px; }
+::-webkit-scrollbar-track { background: var(--c-abyss); }
+::-webkit-scrollbar-thumb { background: var(--c-depth); border-radius: 2px; }
+::-webkit-scrollbar-thumb:hover { background: var(--c-current); }
+::selection { background: rgba(61,255,208,0.2); color: var(--c-biolume); }
+
+/* =============================================================
+   NAV — same structure as site nav
+   ============================================================= */
+#site-nav {
+  position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+  padding: 1.2rem 3rem;
+  transition: background var(--dur-ui), backdrop-filter var(--dur-ui);
+}
+#site-nav.scrolled {
+  background: rgba(2,8,16,0.88);
+  backdrop-filter: blur(12px);
+  border-bottom: 1px solid var(--c-depth);
+}
+.nav-inner {
+  display: flex; align-items: center; justify-content: space-between;
+  max-width: 1200px; margin: 0 auto;
+}
+.nav-brand {
+  display: flex; align-items: baseline; gap: 0.6rem;
+  text-decoration: none;
+}
+.brand-initials {
+  font-family: var(--font-display); font-size: 1.4rem;
+  font-weight: 700; color: var(--c-biolume); line-height: 1;
+}
+.brand-name {
+  font-family: var(--font-mono); font-size: var(--text-label);
+  letter-spacing: 0.25em; color: var(--c-mist); text-transform: uppercase;
+}
+.nav-links {
+  display: flex; align-items: center; gap: 2.5rem;
+  list-style: none;
+}
+.nav-links a {
+  font-family: var(--font-mono); font-size: var(--text-label);
+  letter-spacing: 0.15em; text-transform: uppercase;
+  color: var(--c-mist); text-decoration: none; position: relative;
+  transition: color var(--dur-micro);
+  padding-bottom: 2px;
+}
+.nav-links a::after {
+  content: '';
+  position: absolute; bottom: -2px; left: 0; right: 0; height: 1px;
+  background: var(--c-biolume);
+  transform: scaleX(0); transform-origin: left;
+  transition: transform var(--dur-ui) var(--ease-out);
+}
+.nav-links a:hover { color: var(--c-seafoam); }
+.nav-links a:hover::after { transform: scaleX(1); }
+.nav-back {
+  display: flex; align-items: center; gap: 0.5rem;
+  font-family: var(--font-mono); font-size: var(--text-label);
+  letter-spacing: 0.15em; text-transform: uppercase;
+  color: var(--c-ghost); text-decoration: none;
+  transition: color var(--dur-micro);
+}
+.nav-back:hover { color: var(--c-biolume); }
+.nav-back::before { content: '←'; }
+
+/* =============================================================
+   LAYOUT
+   ============================================================= */
+main {
+  position: relative; z-index: 2;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 3rem;
+}
+
+.container { max-width: 900px; }
+
+.section {
+  padding: var(--space-xl) 0;
+}
+
+/* Zone divider — same as site */
+.zone-div {
+  position: relative;
+  height: 1px;
+  background: linear-gradient(to right, transparent, var(--c-depth), transparent);
+  margin: 0;
+  z-index: 2;
+}
+.zone-div::after {
+  content: attr(data-depth);
+  position: absolute;
+  right: 0; top: 50%;
+  transform: translateY(-50%);
+  font-family: var(--font-mono);
+  font-size: var(--text-micro);
+  letter-spacing: 0.2em;
+  color: var(--c-ghost);
+  background: var(--c-void);
+  padding-left: 1rem;
+  text-transform: uppercase;
+}
+
+/* Scroll reveal — same as site */
+.reveal {
+  opacity: 0;
+  clip-path: inset(0 0 30px 0);
+  transition: opacity var(--dur-reveal) var(--ease-out),
+              clip-path var(--dur-reveal) var(--ease-out);
+}
+.reveal.visible {
+  opacity: 1;
+  clip-path: inset(0 0 0 0);
+}
+
+/* Eyebrow label — same pattern */
+.eyebrow {
+  font-family: var(--font-mono);
+  font-size: var(--text-label);
+  letter-spacing: 0.25em;
+  text-transform: uppercase;
+  color: var(--c-biolume);
+  margin-bottom: var(--space-xs);
+}
+
+.section-title {
+  font-family: var(--font-display);
+  font-size: var(--text-display);
+  font-weight: 600;
+  color: var(--c-star);
+  line-height: 1.15;
+  margin-bottom: var(--space-sm);
+}
+
+.section-rule {
+  width: 60px; height: 1px;
+  background: linear-gradient(to right, var(--c-biolume), transparent);
+  margin-bottom: var(--space-md);
+}
+
+/* Tool tags — same as project cards */
+.tool-tag {
+  font-family: var(--font-mono);
+  font-size: var(--text-micro);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--c-ghost);
+  border: 1px solid var(--c-depth);
+  border-radius: var(--radius-sm);
+  padding: 0.2rem 0.6rem;
+  white-space: nowrap;
+  transition: border-color var(--dur-micro), color var(--dur-micro);
+}
+.tool-tag:hover { border-color: var(--c-current); color: var(--c-mist); }
+
+/* Buttons — exactly from site */
+.btn {
+  display: inline-flex; align-items: center; justify-content: center;
+  padding: 0.75rem 2rem;
+  font-family: var(--font-mono); font-size: var(--text-label);
+  letter-spacing: 0.15em; text-transform: uppercase;
+  text-decoration: none; border-radius: var(--radius-sm);
+  transition: all var(--dur-ui) var(--ease-out);
+  cursor: none; border: none; position: relative; overflow: hidden;
+}
+.btn-primary {
+  background: linear-gradient(135deg, var(--c-current), var(--c-thermal));
+  color: var(--c-void);
+  box-shadow: 0 0 20px rgba(31,138,122,0.25);
+}
+.btn-primary:hover {
+  box-shadow: 0 0 30px rgba(61,255,208,0.35);
+  transform: translateY(-2px);
+}
+.btn-ghost {
+  background: transparent;
+  color: var(--c-seafoam);
+  border: 1px solid var(--c-depth);
+}
+.btn-ghost:hover {
+  border-color: var(--c-biolume);
+  color: var(--c-biolume);
+  box-shadow: 0 0 16px rgba(61,255,208,0.12);
+  transform: translateY(-2px);
+}
+:focus-visible { outline: 1.5px solid var(--c-biolume); outline-offset: 3px; }
+
+/* =============================================================
+   PROJECT HERO HEADER
+   ============================================================= */
+.project-hero {
+  padding: 10rem 0 var(--space-lg);
+  position: relative;
+}
+
+.project-hero .orb {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(80px);
+  pointer-events: none;
+  opacity: 0.12;
+}
+.project-hero .orb-1 {
+  width: 500px; height: 300px;
+  background: radial-gradient(ellipse, var(--c-thermal), transparent 70%);
+  top: 60px; left: -100px;
+  animation: orb-drift 18s ease-in-out infinite alternate;
+}
+.project-hero .orb-2 {
+  width: 300px; height: 300px;
+  background: radial-gradient(ellipse, var(--c-nebula), transparent 70%);
+  top: 0; right: -80px;
+  opacity: 0.06;
+  animation: orb-drift 24s ease-in-out infinite alternate-reverse;
+}
+@keyframes orb-drift {
+  from { transform: translateY(0) translateX(0); }
+  to   { transform: translateY(30px) translateX(20px); }
+}
+
+.project-hero-meta {
+  display: flex; align-items: center; gap: 1rem;
+  margin-bottom: var(--space-sm);
+}
+.project-category {
+  font-family: var(--font-mono);
+  font-size: var(--text-micro);
+  letter-spacing: 0.2em; text-transform: uppercase;
+  color: var(--c-ghost);
+}
+.project-category::before { content: '// '; color: var(--c-current); }
+.meta-sep { color: var(--c-ghost); font-family: var(--font-mono); font-size: var(--text-micro); }
+
+.project-hero-title {
+  font-family: var(--font-display);
+  font-size: clamp(2.8rem, 7vw, 6rem);
+  font-weight: 700;
+  line-height: 1.05;
+  letter-spacing: -0.01em;
+  color: var(--c-star);
+  margin-bottom: var(--space-sm);
+}
+.project-hero-title span { color: var(--c-biolume); }
+
+.project-hero-oneliner {
+  font-family: var(--font-body);
+  font-weight: 300;
+  font-size: clamp(1rem, 1.5vw, 1.2rem);
+  color: var(--c-mist);
+  max-width: 600px;
+  line-height: 1.7;
+  margin-bottom: var(--space-md);
+}
+
+.project-hero-tools {
+  display: flex; flex-wrap: wrap; gap: 0.5rem;
+  margin-bottom: var(--space-md);
+}
+
+.project-hero-links {
+  display: flex; align-items: center; gap: 1.2rem;
+  flex-wrap: wrap;
+}
+.project-link {
+  font-family: var(--font-mono); font-size: var(--text-label);
+  letter-spacing: 0.1em; text-transform: uppercase;
+  color: var(--c-seafoam); text-decoration: none;
+  transition: color var(--dur-micro);
+}
+.project-link:hover { color: var(--c-biolume); }
+
+/* Stat bar */
+.stat-row {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  border: 1px solid var(--c-depth);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  margin-top: var(--space-lg);
+}
+.stat-cell {
+  padding: 1.6rem;
+  text-align: center;
+  border-right: 1px solid var(--c-depth);
+  background: var(--c-abyss);
+  transition: background var(--dur-ui);
+}
+.stat-cell:last-child { border-right: none; }
+.stat-cell:hover { background: var(--c-trench); }
+.stat-num {
+  font-family: var(--font-display); font-size: 2.5rem; font-weight: 700;
+  color: var(--c-biolume); line-height: 1; margin-bottom: 0.3rem;
+}
+.stat-label {
+  font-family: var(--font-mono); font-size: var(--text-micro);
+  letter-spacing: 0.18em; text-transform: uppercase; color: var(--c-ghost);
+}
+
+/* =============================================================
+   OVERVIEW — featured card style (mirrors featured-card)
+   ============================================================= */
+.overview-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-md);
+  margin-top: var(--space-md);
+}
+
+/* Tool card — styled as project cards */
+.tool-doc-card {
+  background: var(--c-abyss);
+  border: 1px solid var(--c-depth);
+  border-radius: var(--radius-md);
+  padding: var(--space-md);
+  position: relative;
+  overflow: hidden;
+  transition: border-color var(--dur-ui), transform var(--dur-ui), box-shadow var(--dur-ui);
+  cursor: none;
+}
+.tool-doc-card::before {
+  content: '';
+  position: absolute; top: 0; left: 0; right: 0; height: 1.5px;
+  opacity: 0;
+  transition: opacity var(--dur-ui);
+}
+.tool-doc-card.validator::before {
+  background: linear-gradient(to right, transparent, var(--c-biolume), transparent);
+}
+.tool-doc-card.publisher::before {
+  background: linear-gradient(to right, transparent, var(--c-nebula), transparent);
+}
+.tool-doc-card:hover {
+  border-color: var(--c-current);
+  transform: translateY(-3px);
+  box-shadow: 0 8px 32px rgba(15,48,80,0.5);
+}
+.tool-doc-card:hover::before { opacity: 1; }
+
+.tool-doc-card .card-glyph {
+  font-size: 1.4rem;
+  margin-bottom: 0.8rem;
+  display: block;
+}
+.tool-doc-card .card-title {
+  font-family: var(--font-display); font-size: 1.4rem; font-weight: 600;
+  color: var(--c-star); margin-bottom: 0.2rem;
+}
+.tool-doc-card .card-file {
+  font-family: var(--font-mono); font-size: var(--text-micro);
+  letter-spacing: 0.1em; color: var(--c-ghost); margin-bottom: 1rem;
+}
+.tool-doc-card p {
+  color: var(--c-mist); font-size: 0.9rem; margin-bottom: 1.2rem;
+}
+.feature-list {
+  list-style: none;
+  display: flex; flex-direction: column; gap: 0.5rem;
+}
+.feature-list li {
+  font-family: var(--font-mono); font-size: var(--text-micro);
+  letter-spacing: 0.05em; color: var(--c-mist);
+  display: flex; gap: 0.6rem; align-items: flex-start;
+}
+.feature-list li::before {
+  content: '→';
+  color: var(--c-current);
+  flex-shrink: 0;
+  margin-top: 0.05em;
+}
+.tool-doc-card.publisher .feature-list li::before { color: var(--c-nebula); }
+
+/* =============================================================
+   CHECKS TABLE — R&D list style
+   ============================================================= */
+.checks-section { margin-top: var(--space-lg); }
+
+.check-table {
+  width: 100%; border-collapse: collapse;
+  margin-top: var(--space-md);
+}
+.check-table thead tr {
+  border-bottom: 1px solid var(--c-depth);
+}
+.check-table th {
+  font-family: var(--font-mono); font-size: var(--text-micro);
+  letter-spacing: 0.18em; text-transform: uppercase; color: var(--c-ghost);
+  padding: 0.7rem 1rem; text-align: left;
+}
+.check-table td {
+  padding: 1.1rem 1rem;
+  color: var(--c-mist);
+  border-bottom: 1px solid rgba(15,48,80,0.5);
+  font-size: 0.88rem;
+  vertical-align: top;
+}
+.check-table td:first-child {
+  font-family: var(--font-display); font-weight: 600; font-size: 1rem;
+  color: var(--c-star);
+  white-space: nowrap;
+}
+.check-table tr { transition: background var(--dur-micro); }
+.check-table tr:hover td { background: rgba(11,31,54,0.4); }
+.check-table tr:last-child td { border-bottom: none; }
+
+.badge-error   { color: #e05c6e; font-family: var(--font-mono); font-size: var(--text-micro); letter-spacing: 0.12em; text-transform: uppercase; }
+.badge-warning { color: var(--c-amber); font-family: var(--font-mono); font-size: var(--text-micro); letter-spacing: 0.12em; text-transform: uppercase; }
+.badge-fix-yes { color: var(--c-biolume); font-family: var(--font-mono); font-size: var(--text-micro); letter-spacing: 0.1em; }
+.badge-fix-no  { color: var(--c-ghost); font-family: var(--font-mono); font-size: var(--text-micro); }
+
+/* =============================================================
+   CODE BLOCKS
+   ============================================================= */
+.code-block-wrap { margin-top: var(--space-md); }
+.code-block-wrap + .code-block-wrap { margin-top: var(--space-sm); }
+
+.code-header {
+  display: flex; align-items: center; justify-content: space-between;
+  background: var(--c-trench);
+  border: 1px solid var(--c-depth);
+  border-bottom: none;
+  border-radius: var(--radius-md) var(--radius-md) 0 0;
+  padding: 0.6rem 1.2rem;
+}
+.code-lang {
+  font-family: var(--font-mono); font-size: var(--text-micro);
+  letter-spacing: 0.15em; text-transform: uppercase; color: var(--c-biolume);
+}
+.code-filename {
+  font-family: var(--font-mono); font-size: var(--text-micro);
+  letter-spacing: 0.06em; color: var(--c-ghost);
+}
+
+pre {
+  background: var(--c-abyss);
+  border: 1px solid var(--c-depth);
+  border-radius: 0 0 var(--radius-md) var(--radius-md);
+  padding: 1.6rem 1.8rem;
+  overflow-x: auto;
+  font-family: var(--font-mono);
+  font-size: 0.82rem;
+  line-height: 1.85;
+  color: var(--c-mist);
+  tab-size: 4;
+}
+.kw  { color: #7eb8ff; }
+.fn  { color: #c9a0ff; }
+.str { color: #7ee8a2; }
+.cm  { color: var(--c-ghost); font-style: italic; }
+.num { color: var(--c-amber); }
+.hl  { color: var(--c-biolume); }
+
+/* Folder tree */
+.folder-tree {
+  background: var(--c-abyss);
+  border: 1px solid var(--c-depth);
+  border-radius: var(--radius-md);
+  padding: 1.6rem 1.8rem;
+  font-family: var(--font-mono);
+  font-size: 0.82rem;
+  line-height: 2;
+  color: var(--c-mist);
+}
+.tree-dir  { color: var(--c-seafoam); font-weight: 500; }
+.tree-new  { color: var(--c-biolume); }
+.tree-note { color: var(--c-ghost); font-style: italic; }
+
+/* Inline code */
+code {
+  font-family: var(--font-mono);
+  font-size: 0.82rem;
+  background: var(--c-trench);
+  border: 1px solid var(--c-depth);
+  border-radius: 3px;
+  padding: 0.1em 0.4em;
+  color: var(--c-seafoam);
+}
+
+/* =============================================================
+   INSTALL STEPS
+   ============================================================= */
+.install-list {
+  display: flex; flex-direction: column; gap: var(--space-md);
+  margin-top: var(--space-md);
+}
+.install-step {
+  display: grid;
+  grid-template-columns: 44px 1fr;
+  gap: 1.4rem;
+  align-items: start;
+}
+.step-num {
+  width: 44px; height: 44px; border-radius: 50%;
+  background: var(--c-abyss);
+  border: 1px solid var(--c-depth);
+  display: flex; align-items: center; justify-content: center;
+  font-family: var(--font-mono); font-size: var(--text-label);
+  color: var(--c-biolume); flex-shrink: 0;
+  transition: border-color var(--dur-ui);
+}
+.install-step:hover .step-num { border-color: var(--c-current); }
+.step-body {}
+.step-body h4 {
+  font-family: var(--font-display); font-size: 1.1rem; font-weight: 600;
+  color: var(--c-star); margin-bottom: 0.3rem;
+}
+.step-body p {
+  color: var(--c-mist); font-size: 0.88rem; margin-bottom: 0.8rem;
+}
+
+/* =============================================================
+   SKILLS GRID — rnd-entry style
+   ============================================================= */
+.skills-doc-list {
+  display: flex; flex-direction: column; gap: 0;
+  margin-top: var(--space-md);
+}
+.skill-doc-row {
+  display: grid;
+  grid-template-columns: 200px 1fr;
+  gap: var(--space-md);
+  padding: 1.5rem 0;
+  border-bottom: 1px solid var(--c-depth);
+  transition: background var(--dur-ui);
+  align-items: start;
+}
+.skill-doc-row:first-child { border-top: 1px solid var(--c-depth); }
+.skill-doc-row:hover {
+  background: rgba(11,31,54,0.4);
+  margin: 0 -1.5rem;
+  padding-left: 1.5rem;
+  padding-right: 1.5rem;
+}
+.skill-name {
+  font-family: var(--font-display); font-size: 1.05rem; font-weight: 600;
+  color: var(--c-star);
+}
+.skill-where {
+  font-family: var(--font-mono); font-size: var(--text-micro);
+  letter-spacing: 0.1em; color: var(--c-ghost); margin-top: 0.25rem;
+}
+.skill-desc { color: var(--c-mist); font-size: 0.9rem; line-height: 1.65; }
+
+/* =============================================================
+   MANIFEST ANATOMY
+   ============================================================= */
+.manifest-grid {
+  display: grid; grid-template-columns: 1fr 1fr;
+  gap: var(--space-sm); margin-top: var(--space-md);
+}
+
+/* =============================================================
+   FOOTER — same as site
+   ============================================================= */
+.site-footer {
+  position: relative; z-index: 2;
+  padding: 2rem 3rem;
+  border-top: 1px solid var(--c-depth);
+  text-align: center;
+  margin-top: var(--space-xl);
+}
+.footer-text {
+  font-family: var(--font-mono); font-size: var(--text-micro);
+  letter-spacing: 0.2em; color: var(--c-ghost); text-transform: lowercase;
+}
+.footer-accent { color: var(--c-current); }
+
+/* =============================================================
+   RESPONSIVE
+   ============================================================= */
+@media (max-width: 900px) {
+  main { padding: 0 1.5rem; }
+  #site-nav { padding: 1rem 1.5rem; }
+  .overview-grid { grid-template-columns: 1fr; }
+  .stat-row { grid-template-columns: 1fr 1fr; }
+  .skill-doc-row { grid-template-columns: 150px 1fr; }
+  .manifest-grid { grid-template-columns: 1fr; }
+}
+@media (max-width: 600px) {
+  .stat-row { grid-template-columns: 1fr 1fr; }
+  .stat-cell { padding: 1rem; }
+  .skill-doc-row { grid-template-columns: 1fr; gap: 0.3rem; }
+  body { cursor: auto; }
+  #cursor-ring, #cursor-dot { display: none; }
+  .nav-links { display: none; }
+}
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+  .reveal { opacity: 1; clip-path: none; }
+}
+</style>
+</head>
+<body>
+
+<!-- Atmosphere -->
+<div class="grain" aria-hidden="true"></div>
+<canvas id="stars" aria-hidden="true"></canvas>
+
+<!-- Cursor -->
+<div id="cursor-ring" aria-hidden="true"></div>
+<div id="cursor-dot"  aria-hidden="true"></div>
+
+<!-- ══════════════════════════════════════════
+     NAV
+═════════════════════════════════════════════ -->
+<header id="site-nav">
+  <nav class="nav-inner" aria-label="Primary navigation">
+    <a class="nav-brand" href="index.html" aria-label="Back to AlyArtBar home">
+      <span class="brand-initials">AB</span>
+      <span class="brand-name">AlyArtBar</span>
+    </a>
+    <ul class="nav-links" role="list">
+      <li><a href="index.html#projects">Projects</a></li>
+      <li><a href="index.html#rnd">R&amp;D</a></li>
+      <li><a href="index.html#contact">Contact</a></li>
+      <li><a href="assets/resume.pdf" target="_blank" rel="noopener">Resume ↗</a></li>
+    </ul>
+    <a class="nav-back" href="index.html#projects">Back to Projects</a>
+  </nav>
+</header>
+
+<main>
+
+  <!-- ══════════════════════════════════════════
+       PROJECT HERO
+  ═════════════════════════════════════════════ -->
+  <section class="project-hero">
+    <div class="orb orb-1" aria-hidden="true"></div>
+    <div class="orb orb-2" aria-hidden="true"></div>
+
+    <div class="project-hero-meta reveal">
+      <span class="project-category">pipeline tools · td work</span>
+      <span class="meta-sep">·</span>
+      <span class="project-category" style="color:var(--c-biolume); font-family:var(--font-mono); font-size:var(--text-micro); letter-spacing:0.2em; text-transform:uppercase;">
+        <span style="display:inline-block; width:6px; height:6px; border-radius:50%; background:var(--c-biolume); vertical-align:middle; margin-right:0.5rem; animation: pulse 2.5s ease-in-out infinite;"></span>
+        WIP / Live
+      </span>
+    </div>
+
+    <h1 class="project-hero-title reveal" style="animation-delay:0.1s">
+      Python<br><span>Pipeline Tools</span>
+    </h1>
+
+    <p class="project-hero-oneliner reveal" style="animation-delay:0.18s">
+      A production-grade Python toolkit — Scene Validator &amp; Asset Publisher —
+      demonstrating the TD fundamentals studios care about: validation, versioning,
+      USD authoring, and data-driven publish records.
+    </p>
+
+    <div class="project-hero-tools reveal" style="animation-delay:0.24s">
+      <span class="tool-tag">Python 3.9+</span>
+      <span class="tool-tag">Maya API</span>
+      <span class="tool-tag">PySide2 / PySide6</span>
+      <span class="tool-tag">OpenUSD</span>
+      <span class="tool-tag">Git Automation</span>
+      <span class="tool-tag">QThread</span>
+      <span class="tool-tag">JSON Manifests</span>
+      <span class="tool-tag">SHA-256</span>
+    </div>
+
+    <div class="project-hero-links reveal" style="animation-delay:0.3s">
+      <a href="https://github.com/AlyBarr" class="btn btn-primary" target="_blank" rel="noopener">View on GitHub ↗</a>
+      <a href="#overview" class="btn btn-ghost">Documentation ↓</a>
+    </div>
+
+    <div class="stat-row reveal" style="animation-delay:0.38s">
+      <div class="stat-cell">
+        <div class="stat-num">2</div>
+        <div class="stat-label">Tools</div>
+      </div>
+      <div class="stat-cell">
+        <div class="stat-num">5</div>
+        <div class="stat-label">Validators</div>
+      </div>
+      <div class="stat-cell">
+        <div class="stat-num">~600</div>
+        <div class="stat-label">Lines</div>
+      </div>
+      <div class="stat-cell">
+        <div class="stat-num">0</div>
+        <div class="stat-label">Hard Deps*</div>
+      </div>
+    </div>
+    <p style="font-family:var(--font-mono); font-size:var(--text-micro); color:var(--c-ghost); margin-top:0.6rem;">
+      * Core logic runs without Maya. PySide6 and usd-core are optional — both degrade gracefully.
+    </p>
+  </section>
+
+  <div class="zone-div" data-depth="// 01 overview"></div>
+
+  <!-- ══════════════════════════════════════════
+       OVERVIEW
+  ═════════════════════════════════════════════ -->
+  <section id="overview" class="section">
+    <div class="container">
+      <div class="reveal">
+        <p class="eyebrow">// 01 — Overview</p>
+        <h2 class="section-title">Two tools.<br>One cohesive pipeline.</h2>
+        <div class="section-rule" aria-hidden="true"></div>
+        <p style="color:var(--c-mist); max-width:620px; margin-bottom: var(--space-md);">
+          Both tools are built to mirror real production workflows at VFX and games studios.
+          They run fully standalone for demo purposes and connect seamlessly into Maya
+          via a one-click shelf installer. A hiring manager can open the code and immediately
+          recognise familiar patterns.
+        </p>
+      </div>
+
+      <div class="overview-grid">
+
+        <!-- Scene Validator -->
+        <div class="tool-doc-card validator reveal">
+          <span class="card-glyph">🎬</span>
+          <h3 class="card-title">Scene Validator</h3>
+          <p class="card-file">scene_validator/scene_validator.py</p>
+          <p>
+            Validates Maya scenes against configurable studio conventions before handoff.
+            Runs checks on a background QThread — the UI never freezes on heavy scenes.
+          </p>
+          <ul class="feature-list">
+            <li>Naming convention enforcement via configurable regex</li>
+            <li>Texture file path integrity — all file nodes verified on disk</li>
+            <li>Scale consistency — catches non-frozen transforms</li>
+            <li>Missing texture warnings on shader materials</li>
+            <li>Heavy geometry detection with configurable poly limit</li>
+            <li>Auto-fix system — freeze scale, remap paths via file dialog</li>
+            <li>JSON report export with SHA-256 checksums per file</li>
+            <li>Live log panel + rotating file in ~/pipeline_logs/</li>
+          </ul>
+        </div>
+
+        <!-- Asset Publisher -->
+        <div class="tool-doc-card publisher reveal" data-delay="100">
+          <span class="card-glyph">📦</span>
+          <h3 class="card-title">Asset Publisher</h3>
+          <p class="card-file">asset_publisher/asset_publisher.py</p>
+          <p>
+            Handles the full publish pipeline: versioning, folder creation, checksumming,
+            USD layer generation, and optional Git commits — all from a single UI.
+          </p>
+          <ul class="feature-list">
+            <li>Auto-versioning — scans existing versions, increments v001 → v002</li>
+            <li>Structured folder hierarchy — type / name / dept / version</li>
+            <li>JSON manifest — timestamps, artist, notes, tags, file hashes</li>
+            <li>USD payload layer — full Usd.Stage or valid .usda stub without usd-core</li>
+            <li>Git integration — auto commit + semantic version tag per publish</li>
+            <li>Drag-and-drop file list with Maya scene injection button</li>
+            <li>Threaded publish — UI stays live during copy and hash operations</li>
+          </ul>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+  <div class="zone-div" data-depth="// 02 checks"></div>
+
+  <!-- ══════════════════════════════════════════
+       VALIDATION CHECKS
+  ═════════════════════════════════════════════ -->
+  <section class="section">
+    <div class="container">
+      <div class="reveal">
+        <p class="eyebrow">// 02 — Checks</p>
+        <h2 class="section-title">Scene Validator —<br>Check Reference</h2>
+        <div class="section-rule" aria-hidden="true"></div>
+        <p style="color:var(--c-mist);">All thresholds and patterns are configurable at the top of the file — no hardcoded studio-specific values.</p>
+      </div>
+
+      <table class="check-table reveal" data-delay="80">
+        <thead>
+          <tr>
+            <th>Check</th>
+            <th>What It Catches</th>
+            <th>Severity</th>
+            <th>Auto-Fix?</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Naming Convention</td>
+            <td>Objects not matching <code>PascalCase_GEO / _CTRL / _JNT / _GRP / _MAT</code> — enforced per node type via regex map</td>
+            <td><span class="badge-error">Error</span></td>
+            <td><span class="badge-fix-no">— human rename required</span></td>
+          </tr>
+          <tr>
+            <td>File Path</td>
+            <td>Missing or empty <code>.fileTextureName</code> attribute on every <code>file</code> node in the scene</td>
+            <td><span class="badge-error">Error</span></td>
+            <td><span class="badge-fix-yes">✦ file dialog remap</span></td>
+          </tr>
+          <tr>
+            <td>Scale Consistency</td>
+            <td>Scale ≠ (1.0, 1.0, 1.0) within configurable tolerance — non-frozen transforms break downstream rigs and USD exports</td>
+            <td><span class="badge-error">Error</span></td>
+            <td><span class="badge-fix-yes">✦ makeIdentity(scale=True)</span></td>
+          </tr>
+          <tr>
+            <td>Missing Textures</td>
+            <td>Shader materials with no upstream texture node connections — catches placeholder shaders before lighting handoff</td>
+            <td><span class="badge-warning">Warning</span></td>
+            <td><span class="badge-fix-no">— manual review</span></td>
+          </tr>
+          <tr>
+            <td>Heavy Geometry</td>
+            <td>Meshes exceeding configurable face-count limit (default 50,000) — surfaces crowd assets and accidental detail imports</td>
+            <td><span class="badge-warning">Warning</span></td>
+            <td><span class="badge-fix-no">— artist decision</span></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <div class="zone-div" data-depth="// 03 code"></div>
+
+  <!-- ══════════════════════════════════════════
+       CODE HIGHLIGHTS
+  ═════════════════════════════════════════════ -->
+  <section class="section">
+    <div class="container">
+      <div class="reveal">
+        <p class="eyebrow">// 03 — Code</p>
+        <h2 class="section-title">Key implementation<br>patterns</h2>
+        <div class="section-rule" aria-hidden="true"></div>
+      </div>
+
+      <!-- Snippet 1 -->
+      <div class="code-block-wrap reveal">
+        <div class="code-header">
+          <span class="code-lang">Python</span>
+          <span class="code-filename">scene_validator.py — auto-fixable result pattern</span>
+        </div>
+<pre><span class="cm"># ValidationResult carries an optional fix_fn callable.
+# When present, the UI enables per-row and bulk Auto-Fix buttons.</span>
+
+<span class="kw">class</span> <span class="fn">ValidationResult</span>:
+    PASS    = <span class="str">"PASS"</span>
+    WARNING = <span class="str">"WARNING"</span>
+    ERROR   = <span class="str">"ERROR"</span>
+
+    <span class="kw">def</span> <span class="fn">__init__</span>(self, check, node, status, message, fix_fn=<span class="kw">None</span>):
+        self.fix_fn = fix_fn   <span class="cm"># callable → activates Auto-Fix in UI</span>
+
+<span class="cm"># Scale check — flags non-frozen transforms, attaches one-click fix</span>
+<span class="kw">def</span> <span class="fn">_check_scale_consistency</span>(self):
+    <span class="kw">for</span> mesh <span class="kw">in</span> cmds.ls(type=<span class="str">"mesh"</span>, long=<span class="kw">True</span>) <span class="kw">or</span> []:
+        transform = cmds.listRelatives(mesh, parent=<span class="kw">True</span>, fullPath=<span class="kw">True</span>)[<span class="num">0</span>]
+        sx, sy, sz = (cmds.getAttr(<span class="str">f"{transform}.scale{ax}"</span>) <span class="kw">for</span> ax <span class="kw">in</span> <span class="str">"XYZ"</span>)
+
+        <span class="kw">if</span> any(abs(v - <span class="num">1.0</span>) &gt; SCALE_TOLERANCE <span class="kw">for</span> v <span class="kw">in</span> (sx, sy, sz)):
+            self.results.append(ValidationResult(
+                check   = <span class="str">"Scale Consistency"</span>,
+                node    = transform,
+                status  = ValidationResult.ERROR,
+                message = <span class="str">f"Non-frozen scale: ({sx:.3f}, {sy:.3f}, {sz:.3f})"</span>,
+                <span class="cm"># lambda captures transform at definition time</span>
+                fix_fn  = <span class="kw">lambda</span> n=transform: cmds.makeIdentity(n, apply=<span class="kw">True</span>, scale=<span class="kw">True</span>)
+            ))</pre>
+      </div>
+
+      <!-- Snippet 2 -->
+      <div class="code-block-wrap reveal" data-delay="60">
+        <div class="code-header">
+          <span class="code-lang">Python</span>
+          <span class="code-filename">asset_publisher.py — manifest with SHA-256 checksums</span>
+        </div>
+<pre><span class="kw">def</span> <span class="fn">_sha256</span>(filepath: str) -> str:
+    h = hashlib.sha256()
+    <span class="kw">with</span> open(filepath, <span class="str">"rb"</span>) <span class="kw">as</span> f:
+        <span class="kw">for</span> chunk <span class="kw">in</span> iter(<span class="kw">lambda</span>: f.read(<span class="num">8192</span>), b<span class="str">""</span>):
+            h.update(chunk)
+    <span class="kw">return</span> h.hexdigest()
+
+<span class="cm"># Manifest.write() — produces a versioned JSON record for every publish</span>
+self.data = {
+    <span class="str">"schema_version"</span>: <span class="str">"1.0"</span>,
+    <span class="str">"asset_name"</span>:     asset_name,
+    <span class="str">"version"</span>:        version,           <span class="cm"># e.g. "v003"</span>
+    <span class="str">"published_by"</span>:   artist,
+    <span class="str">"published_at"</span>:   datetime.utcnow().isoformat() + <span class="str">"Z"</span>,
+    <span class="str">"tags"</span>:           tags,
+    <span class="str">"files"</span>: [{
+        <span class="str">"filename"</span>:      p.name,
+        <span class="str">"size_bytes"</span>:    p.stat().st_size,
+        <span class="str">"sha256"</span>:        _sha256(src),     <span class="cm"># integrity check on every file</span>
+        <span class="str">"original_path"</span>: str(src),
+    } <span class="kw">for</span> src <span class="kw">in</span> source_files <span class="kw">if</span> (p := Path(src)).exists()],
+    <span class="str">"status"</span>:         <span class="str">"published"</span>,
+}</pre>
+      </div>
+
+      <!-- Snippet 3 -->
+      <div class="code-block-wrap reveal" data-delay="120">
+        <div class="code-header">
+          <span class="code-lang">Python</span>
+          <span class="code-filename">asset_publisher.py — USD layer with graceful fallback</span>
+        </div>
+<pre><span class="kw">def</span> <span class="fn">write_usd_stub</span>(publish_path: Path, asset_name: str, geo_files: list[str]):
+    <span class="kw">if</span> USD_AVAILABLE:                       <span class="cm"># full OpenUSD path</span>
+        stage = Usd.Stage.CreateNew(str(publish_path / <span class="str">"payload.usda"</span>))
+        root  = UsdGeom.Xform.Define(stage, <span class="str">f"/{asset_name}"</span>)
+        Usd.ModelAPI(root).SetAssetName(asset_name)
+        <span class="kw">for</span> i, gf <span class="kw">in</span> enumerate(geo_files):
+            stage.DefinePrim(<span class="str">f"/{asset_name}/geo_{i:02d}"</span>).GetReferences().AddReference(gf)
+        stage.GetRootLayer().Save()
+    <span class="kw">else</span>:                                  <span class="cm"># plain-text stub — valid USD syntax</span>
+        stub = <span class="str">f"""#usda 1.0
+def Xform "{asset_name}" (kind = "component")
+{{
+    def Scope "geo" {{}}
+}}"""</span>
+        (publish_path / <span class="str">"payload.usda"</span>).write_text(stub)</pre>
+      </div>
+
+      <!-- Folder tree -->
+      <div class="reveal" data-delay="80" style="margin-top: var(--space-md);">
+        <h3 style="font-family:var(--font-display); font-size:1.2rem; font-weight:600; color:var(--c-star); margin-bottom:1rem;">Published Folder Output</h3>
+        <div class="folder-tree">
+<span class="tree-dir">~/publish_root/</span>
+  <span class="tree-dir">character/</span>
+    <span class="tree-dir">HeroCharacter/</span>
+      <span class="tree-dir">model/</span>
+        <span class="tree-dir">v001/</span>
+          HeroCharacter.ma          <span class="tree-note">← source file (copied + checksummed)</span>
+          HeroCharacter.obj         <span class="tree-note">← geo export</span>
+          <span class="tree-new">payload.usda</span>              <span class="tree-note">← USD layer (auto-generated)</span>
+          <span class="tree-new">manifest.json</span>             <span class="tree-note">← full publish record</span>
+        <span class="tree-dir">v002/</span>                         <span class="tree-note">← auto-incremented on next publish</span>
+      <span class="tree-dir">rig/</span>
+        <span class="tree-dir">v001/ ...</span>
+  <span class="tree-dir">prop/</span>
+    ...
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <div class="zone-div" data-depth="// 04 install"></div>
+
+  <!-- ══════════════════════════════════════════
+       INSTALLATION
+  ═════════════════════════════════════════════ -->
+  <section class="section">
+    <div class="container">
+      <div class="reveal">
+        <p class="eyebrow">// 04 — Install</p>
+        <h2 class="section-title">Getting started</h2>
+        <div class="section-rule" aria-hidden="true"></div>
+      </div>
+
+      <div class="install-list">
+
+        <div class="install-step reveal">
+          <div class="step-num">01</div>
+          <div class="step-body">
+            <h4>Clone the repository</h4>
+            <p>Copy the <code>pipeline_tools</code> folder to your scripts directory or a shared location on your pipeline NFS.</p>
+            <div class="code-header" style="margin-top:0.5rem;">
+              <span class="code-lang">Bash</span>
+            </div>
+            <pre>git clone https://github.com/AlyBarr/pipeline-tools
+cd pipeline-tools</pre>
+          </div>
+        </div>
+
+        <div class="install-step reveal" data-delay="80">
+          <div class="step-num">02</div>
+          <div class="step-body">
+            <h4>Install optional dependencies</h4>
+            <p>PySide6 powers the UI. <code>usd-core</code> enables full USD stage authoring. Both fall back gracefully if absent — Maya 2022+ already ships with PySide2.</p>
+            <div class="code-header" style="margin-top:0.5rem;">
+              <span class="code-lang">Bash</span>
+            </div>
+            <pre>pip install PySide6          <span class="cm"># UI — skip if using Maya 2022+</span>
+pip install usd-core         <span class="cm"># Full USD authoring (optional)</span></pre>
+          </div>
+        </div>
+
+        <div class="install-step reveal" data-delay="140">
+          <div class="step-num">03</div>
+          <div class="step-body">
+            <h4>Run standalone — no Maya required</h4>
+            <p>Both tools launch in demo mode with realistic mock data when Maya is not present. Use this to evaluate the UI and report output.</p>
+            <div class="code-header" style="margin-top:0.5rem;">
+              <span class="code-lang">Bash</span>
+            </div>
+            <pre>python scene_validator/scene_validator.py
+python asset_publisher/asset_publisher.py</pre>
+          </div>
+        </div>
+
+        <div class="install-step reveal" data-delay="200">
+          <div class="step-num">04</div>
+          <div class="step-body">
+            <h4>Maya — install to shelf</h4>
+            <p>Paste the shelf installer into Maya's Script Editor (Python tab) once. Updates the <code>TOOLS_DIR</code> path at the top first.</p>
+            <div class="code-header" style="margin-top:0.5rem;">
+              <span class="code-lang">Python — Maya Script Editor</span>
+            </div>
+            <pre><span class="cm"># Update TOOLS_DIR in maya_shelf_installer.py first</span>
+exec(open(<span class="str">"/path/to/pipeline_tools/maya_shelf_installer.py"</span>).read())</pre>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+  <div class="zone-div" data-depth="// 05 skills"></div>
+
+  <!-- ══════════════════════════════════════════
+       SKILLS DEMONSTRATED
+  ═════════════════════════════════════════════ -->
+  <section class="section">
+    <div class="container">
+      <div class="reveal">
+        <p class="eyebrow">// 05 — Skills</p>
+        <h2 class="section-title">Built to signal<br>production readiness</h2>
+        <div class="section-rule" aria-hidden="true"></div>
+        <p style="color:var(--c-mist); max-width:580px;">
+          Every design decision mirrors conventions at major VFX and games studios.
+          A senior TD or hiring manager should recognise familiar patterns immediately.
+        </p>
+      </div>
+
+      <div class="skills-doc-list">
+
+        <div class="skill-doc-row reveal">
+          <div>
+            <div class="skill-name">Maya API</div>
+            <div class="skill-where">scene_validator.py</div>
+          </div>
+          <div class="skill-desc">
+            Production-standard Maya scripting — <code>cmds</code>, <code>listRelatives</code>, <code>getAttr</code>, <code>polyEvaluate</code>, <code>makeIdentity</code>, and material graph traversal via <code>listConnections</code>.
+          </div>
+        </div>
+
+        <div class="skill-doc-row reveal" data-delay="50">
+          <div>
+            <div class="skill-name">PySide2 / 6 UI</div>
+            <div class="skill-where">both tools</div>
+          </div>
+          <div class="skill-desc">
+            <code>QMainWindow</code>, <code>QTreeWidget</code>, <code>QFormLayout</code>, <code>QFileDialog</code>, <code>QPlainTextEdit</code> log panel, custom <code>QTreeWidgetItem</code> subclassing, full dark stylesheet theming.
+          </div>
+        </div>
+
+        <div class="skill-doc-row reveal" data-delay="100">
+          <div>
+            <div class="skill-name">QThread</div>
+            <div class="skill-where">both tools</div>
+          </div>
+          <div class="skill-desc">
+            All heavy operations (validation, file copy, SHA-256 hashing) run on background threads with <code>Signal / Slot</code> communication back to the main UI thread — UI never freezes regardless of scene size.
+          </div>
+        </div>
+
+        <div class="skill-doc-row reveal" data-delay="150">
+          <div>
+            <div class="skill-name">OpenUSD</div>
+            <div class="skill-where">asset_publisher.py</div>
+          </div>
+          <div class="skill-desc">
+            <code>Usd.Stage</code> creation, <code>UsdGeom.Xform</code>, <code>Usd.ModelAPI</code> asset metadata, prim-level reference authoring, and layer saving — plus a valid plain-text <code>.usda</code> stub fallback when <code>usd-core</code> is not installed.
+          </div>
+        </div>
+
+        <div class="skill-doc-row reveal" data-delay="200">
+          <div>
+            <div class="skill-name">Git Automation</div>
+            <div class="skill-where">asset_publisher.py — GitHelper</div>
+          </div>
+          <div class="skill-desc">
+            Subprocess-driven <code>git init / add / commit / tag</code> with semantic version strings per publish — e.g. <code>HeroCharacter-model-v003</code>. Designed to bolt onto an existing studio Git workflow.
+          </div>
+        </div>
+
+        <div class="skill-doc-row reveal" data-delay="250">
+          <div>
+            <div class="skill-name">Data Schemas</div>
+            <div class="skill-where">asset_publisher.py — Manifest</div>
+          </div>
+          <div class="skill-desc">
+            Structured JSON manifests with a <code>schema_version</code> field so downstream tools can evolve the schema without breaking readers. Fields cover identity, provenance, file integrity, and publish status.
+          </div>
+        </div>
+
+        <div class="skill-doc-row reveal" data-delay="300">
+          <div>
+            <div class="skill-name">Graceful Degradation</div>
+            <div class="skill-where">both tools — import guards</div>
+          </div>
+          <div class="skill-desc">
+            Maya, PySide, and USD are all wrapped in <code>try / except ImportError</code> with boolean flags. The tools always run — demo mode with mock data if Maya is absent, text-stub USD if <code>usd-core</code> is missing.
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<!-- ══════════════════════════════════════════
+     FOOTER — same as site
+═════════════════════════════════════════════ -->
+<footer class="site-footer">
+  <p class="footer-text">
+    designed &amp; built by
+    <span class="footer-accent">alyssa barrientos</span>
+    · alyartbar ·
+    <span id="footer-year"></span>
+  </p>
+</footer>
+
+<!-- ══════════════════════════════════════════
+     SCRIPTS
+═════════════════════════════════════════════ -->
+<script>
+'use strict';
+
+// Footer year
+document.getElementById('footer-year').textContent = new Date().getFullYear();
+
+// ── Starfield (same logic as site) ─────────────────────────
+(function() {
+  const canvas = document.getElementById('stars');
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+  let W, H, stars = [];
+
+  function resize() { W = canvas.width = window.innerWidth; H = canvas.height = window.innerHeight; }
+
+  function mkStar() {
+    return { x: Math.random()*W, y: Math.random()*H, r: Math.random()*1.1+0.2,
+             a: Math.random()*0.45+0.08, speed: Math.random()*0.12+0.02,
+             drift: (Math.random()-0.5)*0.025, phase: Math.random()*Math.PI*2 };
+  }
+
+  resize();
+  stars = Array.from({ length: 130 }, mkStar);
+  window.addEventListener('resize', resize);
+
+  let t = 0;
+  (function draw() {
+    ctx.clearRect(0, 0, W, H);
+    t += 0.007;
+    for (const s of stars) {
+      s.y -= s.speed; s.x += s.drift;
+      if (s.y < -2) { s.y = H+2; s.x = Math.random()*W; }
+      if (s.x < -2) s.x = W+2;
+      if (s.x > W+2) s.x = -2;
+      const tw = s.a * (0.7 + 0.3*Math.sin(t*1.4+s.phase));
+      ctx.beginPath();
+      ctx.arc(s.x, s.y, s.r, 0, Math.PI*2);
+      ctx.fillStyle = `rgba(232,244,248,${tw})`;
+      ctx.fill();
+    }
+    requestAnimationFrame(draw);
+  })();
+})();
+
+// ── Custom cursor (same as site) ─────────────────────────
+(function() {
+  if (window.innerWidth < 600) return;
+  const ring = document.getElementById('cursor-ring');
+  const dot  = document.getElementById('cursor-dot');
+  if (!ring || !dot) return;
+
+  let mx = -200, my = -200, rx = -200, ry = -200;
+
+  document.addEventListener('mousemove', e => { mx = e.clientX; my = e.clientY; });
+
+  (function tick() {
+    dot.style.left  = mx + 'px';
+    dot.style.top   = my + 'px';
+    rx += (mx - rx) * 0.14;
+    ry += (my - ry) * 0.14;
+    ring.style.left = rx + 'px';
+    ring.style.top  = ry + 'px';
+    requestAnimationFrame(tick);
+  })();
+
+  const hoverSel = 'a, button, .tool-doc-card, .btn, .skill-doc-row, .check-table tr';
+  document.addEventListener('mouseover', e => {
+    if (e.target.closest(hoverSel)) ring.classList.add('hover');
+  });
+  document.addEventListener('mouseout', e => {
+    if (e.target.closest(hoverSel)) ring.classList.remove('hover');
+  });
+})();
+
+// ── Nav scroll state (same as site) ──────────────────────
+(function() {
+  const nav = document.getElementById('site-nav');
+  if (!nav) return;
+  const update = () => nav.classList.toggle('scrolled', window.scrollY > 40);
+  window.addEventListener('scroll', update, { passive: true });
+  update();
+})();
+
+// ── Scroll reveal (same IntersectionObserver as site) ────
+(function() {
+  const els = document.querySelectorAll('.reveal');
+  if (!els.length) return;
+  const obs = new IntersectionObserver(entries => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        const delay = entry.target.dataset.delay ? parseInt(entry.target.dataset.delay) : 0;
+        setTimeout(() => entry.target.classList.add('visible'), delay);
+        obs.unobserve(entry.target);
+      }
+    });
+  }, { threshold: 0.1 });
+  els.forEach(el => obs.observe(el));
+})();
+</script>
+
+<style>
+/* Pulse animation for live dot — same as site */
+@keyframes pulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(61,255,208,0.5); }
+  50%       { box-shadow: 0 0 0 5px rgba(61,255,208,0); }
+}
+</style>
+
+</body>
+</html>
