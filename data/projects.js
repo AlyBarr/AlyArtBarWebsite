@@ -32,7 +32,7 @@ const PROJECTS = [
       { label: "GitHub", url: "https://github.com/AlyBarr/AssetMayaTooling" },
       { label: "Docs",   url: "pipeline-tools.html" }
     ]
-  },
+  },/* ═══════════════════════════════════════════════════════
   {
     id: "proc-terrain",
     featured: true,
@@ -78,6 +78,7 @@ const PROJECTS = [
     tools: ["Houdini", "Karma", "VEX"],
     links: [{ label: "Video", url: "#" }]
   }
+    ═══════════════════════════════════════════════════════*/
 ];
 
 /* ═══════════════════════════════════════════════════════
@@ -105,7 +106,8 @@ const RND_ENTRIES = [
     artifacts: [
       { label: "Notes (WIP)", url: "#" }
     ]
-  },
+  }, /* ═══════════════════════════════════════════════════════
+   R&D ENTRIES
   {
     status: "exploring",
     title: "Domain-Warped Noise for Biome Masking",
@@ -122,4 +124,5 @@ const RND_ENTRIES = [
       { label: "Shadertoy", url: "#" }
     ]
   }
+  ═══════════════════════════════════════════════════════ */
 ];
