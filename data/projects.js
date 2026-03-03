@@ -32,7 +32,27 @@ const PROJECTS = [
       { label: "GitHub", url: "https://github.com/AlyBarr/AssetMayaTooling" },
       { label: "Docs",   url: "pipeline-tools.html" }
     ]
-  },/* ═══════════════════════════════════════════════════════
+  },
+    {
+      id: "ml-rig-predictor",
+      featured: true,
+      category: "Machine Learning · Virtual Production",
+      title: "Virtual Prod ML Rig Predictor",
+      oneliner: "Two-model Random Forest system that classifies 18 human motion actions from 3D skeletal joint data — built for virtual production rigs.",
+      bullets: [
+        "Model 1: full 4,998-dimensional feature pipeline (StandardScaler → Random Forest, 300 trees) for maximum accuracy",
+        "Model 2: PCA-compressed pipeline (100 components) for faster inference in latency-sensitive live VP environments",
+        "Root-space normalization, temporal resampling to 60 frames, and velocity features extracted from KARD dataset"
+      ],
+      tools: ["Python", "Scikit-learn", "Random Forest", "PCA", "NumPy", "Pandas", "Matplotlib"],
+      image: "",
+      imageAlt: "ML Rig Predictor — skeletal action classification",
+      links: [
+        { label: "GitHub", url: "https://github.com/AlyBarr/VirtualProdMLPredict"},
+        { label: "Docs",   url: "MLrigPredictor.html"}
+      ]
+    },
+  /* ═══════════════════════════════════════════════════════
   {
     id: "proc-terrain",
     featured: true,
@@ -99,14 +119,17 @@ const RND_ENTRIES = [
     ]
   },
   {
-    status: "wip",
-    title: "USD Layer Flattening Benchmarks",
-    hypothesis: "Flattening composition arcs at export vs load time has measurable pipeline cost differences worth quantifying.",
-    finding: "Early results: load-time flattening wins for smaller assets; export-time wins at scale. Sample size still small.",
+    status: "live",
+    title: "Virtual Prod ML Rig Predictor — Motion Action Classification",
+    hypothesis: "A Random Forest pipeline with hand-crafted skeletal features could reliably classify 18 motion actions from 3D joint data without deep learning, keeping the system interpretable and deployable in any DCC tool.",
+    finding: "Both models ship. M1 (full feature) maximises accuracy; M2 (PCA-reduced) trades a small margin for faster inference. Feature importances and PCA scatter plots confirm the models learn meaningful motion-space structure.",
     artifacts: [
-      { label: "Notes (WIP)", url: "#" }
+      { label: "GitHub", url: "#" },
+      { label: "Docs",   url: "ml-rig-predictor.html" }
     ]
-  }, /* ═══════════════════════════════════════════════════════
+  }, 
+  
+  /* ═══════════════════════════════════════════════════════
    R&D ENTRIES
   {
     status: "exploring",
