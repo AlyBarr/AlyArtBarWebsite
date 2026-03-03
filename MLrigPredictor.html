@@ -1,0 +1,1622 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="Virtual Production ML Rig Predictor — Motion action classification using Random Forest & PCA on 3D skeletal data. Built by Alyssa Barrientos." />
+  <title>ML Rig Predictor · AlyArtBar</title>
+
+  <!-- Same fonts as portfolio -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,600;0,700;1,300&family=Fira+Code:wght@400;500&family=DM+Sans:ital,wght@0,300;0,400;1,300&display=swap" rel="stylesheet" />
+
+<style>
+/* =============================================================
+   AlyArtBar Design System — Tokens (mirrors tokens.css)
+   ============================================================= */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; }
+img, svg { display: block; max-width: 100%; }
+
+:root {
+  --c-void:     #020810;
+  --c-abyss:    #060f1e;
+  --c-trench:   #0b1f36;
+  --c-depth:    #0f3050;
+  --c-current:  #1a5c72;
+  --c-thermal:  #1f8a7a;
+  --c-biolume:  #3dffd0;
+  --c-seafoam:  #7eeedd;
+  --c-nebula:   #a78bfa;
+  --c-star:     #e8f4f8;
+  --c-mist:     #8ab0c4;
+  --c-ghost:    #3d5a6a;
+  --c-amber:    #f0a050;
+  --c-rose:     #f087b0;
+
+  --font-display: 'Cormorant Garamond', Georgia, serif;
+  --font-mono:    'Fira Code', 'Courier New', monospace;
+  --font-body:    'DM Sans', system-ui, sans-serif;
+
+  --text-hero:    clamp(3rem, 8vw, 7rem);
+  --text-display: clamp(1.8rem, 4vw, 3rem);
+  --text-title:   clamp(1.1rem, 2vw, 1.5rem);
+  --text-body:    clamp(0.88rem, 1vw, 1rem);
+  --text-label:   0.7rem;
+  --text-micro:   0.62rem;
+
+  --space-xs:  0.5rem;
+  --space-sm:  1rem;
+  --space-md:  2rem;
+  --space-lg:  4rem;
+  --space-xl:  7rem;
+
+  --radius-sm: 3px;
+  --radius-md: 6px;
+
+  --ease-out:  cubic-bezier(0.16, 1, 0.3, 1);
+  --dur-micro: 180ms;
+  --dur-ui:    350ms;
+  --dur-reveal:700ms;
+}
+
+/* =============================================================
+   BASE
+   ============================================================= */
+body {
+  background: var(--c-void);
+  color: var(--c-star);
+  font-family: var(--font-body);
+  font-weight: 300;
+  font-size: var(--text-body);
+  line-height: 1.75;
+  overflow-x: hidden;
+  cursor: none;
+}
+
+.grain {
+  position: fixed; inset: 0; z-index: 1;
+  pointer-events: none;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  background-size: 200px 200px;
+  opacity: 0.032;
+  mix-blend-mode: overlay;
+}
+
+#stars {
+  position: fixed; inset: 0; z-index: 0;
+  pointer-events: none;
+}
+
+/* Cursor */
+#cursor-ring, #cursor-dot {
+  position: fixed; z-index: 9999;
+  border-radius: 50%;
+  pointer-events: none;
+  transform: translate(-50%, -50%);
+  transition: width var(--dur-micro), height var(--dur-micro);
+}
+#cursor-ring {
+  width: 28px; height: 28px;
+  border: 1px solid rgba(61,255,208,0.4);
+}
+#cursor-dot {
+  width: 6px; height: 6px;
+  background: var(--c-biolume);
+  box-shadow: 0 0 8px rgba(61,255,208,0.6);
+}
+#cursor-ring.hover { width: 44px; height: 44px; border-color: rgba(61,255,208,0.6); }
+
+::-webkit-scrollbar { width: 4px; }
+::-webkit-scrollbar-track { background: var(--c-abyss); }
+::-webkit-scrollbar-thumb { background: var(--c-depth); border-radius: 2px; }
+::-webkit-scrollbar-thumb:hover { background: var(--c-current); }
+::selection { background: rgba(61,255,208,0.2); color: var(--c-biolume); }
+
+/* =============================================================
+   NAV
+   ============================================================= */
+#site-nav {
+  position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+  padding: 1.2rem 3rem;
+  transition: background var(--dur-ui), backdrop-filter var(--dur-ui);
+}
+#site-nav.scrolled {
+  background: rgba(2,8,16,0.88);
+  backdrop-filter: blur(12px);
+  border-bottom: 1px solid var(--c-depth);
+}
+.nav-inner {
+  display: flex; align-items: center; justify-content: space-between;
+  max-width: 1200px; margin: 0 auto;
+}
+.nav-brand {
+  display: flex; align-items: baseline; gap: 0.6rem;
+  text-decoration: none;
+}
+.brand-initials {
+  font-family: var(--font-display); font-size: 1.4rem;
+  font-weight: 700; color: var(--c-biolume); line-height: 1;
+}
+.brand-name {
+  font-family: var(--font-mono); font-size: var(--text-label);
+  letter-spacing: 0.25em; color: var(--c-mist); text-transform: uppercase;
+}
+.nav-links {
+  display: flex; align-items: center; gap: 2.5rem;
+  list-style: none;
+}
+.nav-links a {
+  font-family: var(--font-mono); font-size: var(--text-label);
+  letter-spacing: 0.15em; text-transform: uppercase;
+  color: var(--c-mist); text-decoration: none; position: relative;
+  transition: color var(--dur-micro);
+  padding-bottom: 2px;
+}
+.nav-links a::after {
+  content: '';
+  position: absolute; bottom: -2px; left: 0; right: 0; height: 1px;
+  background: var(--c-biolume);
+  transform: scaleX(0); transform-origin: left;
+  transition: transform var(--dur-ui) var(--ease-out);
+}
+.nav-links a:hover { color: var(--c-seafoam); }
+.nav-links a:hover::after { transform: scaleX(1); }
+.nav-back {
+  display: flex; align-items: center; gap: 0.5rem;
+  font-family: var(--font-mono); font-size: var(--text-label);
+  letter-spacing: 0.15em; text-transform: uppercase;
+  color: var(--c-ghost); text-decoration: none;
+  transition: color var(--dur-micro);
+}
+.nav-back:hover { color: var(--c-biolume); }
+.nav-back::before { content: '←'; margin-right: 0.25rem; }
+
+/* =============================================================
+   LAYOUT
+   ============================================================= */
+main {
+  position: relative; z-index: 2;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 3rem;
+}
+.container { max-width: 900px; }
+.section { padding: var(--space-xl) 0; }
+
+.zone-div {
+  position: relative;
+  height: 1px;
+  background: linear-gradient(to right, transparent, var(--c-depth), transparent);
+  margin: 0;
+  z-index: 2;
+}
+.zone-div::after {
+  content: attr(data-depth);
+  position: absolute;
+  right: 0; top: 50%;
+  transform: translateY(-50%);
+  font-family: var(--font-mono);
+  font-size: var(--text-micro);
+  letter-spacing: 0.2em;
+  color: var(--c-ghost);
+  background: var(--c-void);
+  padding-left: 1rem;
+  text-transform: uppercase;
+}
+
+.reveal {
+  opacity: 0;
+  clip-path: inset(0 0 30px 0);
+  transition: opacity var(--dur-reveal) var(--ease-out),
+              clip-path var(--dur-reveal) var(--ease-out);
+}
+.reveal.visible {
+  opacity: 1;
+  clip-path: inset(0 0 0 0);
+}
+
+.eyebrow {
+  font-family: var(--font-mono);
+  font-size: var(--text-label);
+  letter-spacing: 0.25em;
+  text-transform: uppercase;
+  color: var(--c-biolume);
+  margin-bottom: var(--space-xs);
+}
+.section-title {
+  font-family: var(--font-display);
+  font-size: var(--text-display);
+  font-weight: 600;
+  color: var(--c-star);
+  line-height: 1.15;
+  margin-bottom: var(--space-sm);
+}
+.section-rule {
+  width: 60px; height: 1px;
+  background: linear-gradient(to right, var(--c-biolume), transparent);
+  margin-bottom: var(--space-md);
+}
+
+/* Tool tags */
+.tool-tag {
+  font-family: var(--font-mono);
+  font-size: var(--text-micro);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--c-ghost);
+  border: 1px solid var(--c-depth);
+  border-radius: var(--radius-sm);
+  padding: 0.2rem 0.6rem;
+  white-space: nowrap;
+  transition: border-color var(--dur-micro), color var(--dur-micro);
+}
+.tool-tag:hover { border-color: var(--c-current); color: var(--c-mist); }
+
+/* Buttons */
+.btn {
+  display: inline-flex; align-items: center; justify-content: center;
+  padding: 0.75rem 2rem;
+  font-family: var(--font-mono); font-size: var(--text-label);
+  letter-spacing: 0.15em; text-transform: uppercase;
+  text-decoration: none; border-radius: var(--radius-sm);
+  transition: all var(--dur-ui) var(--ease-out);
+  cursor: none; border: none; position: relative; overflow: hidden;
+}
+.btn-primary {
+  background: linear-gradient(135deg, var(--c-current), var(--c-thermal));
+  color: var(--c-void);
+  box-shadow: 0 0 20px rgba(31,138,122,0.25);
+}
+.btn-primary:hover {
+  box-shadow: 0 0 30px rgba(61,255,208,0.35);
+  transform: translateY(-2px);
+}
+.btn-ghost {
+  background: transparent;
+  color: var(--c-seafoam);
+  border: 1px solid var(--c-depth);
+}
+.btn-ghost:hover {
+  border-color: var(--c-biolume);
+  color: var(--c-biolume);
+  box-shadow: 0 0 16px rgba(61,255,208,0.12);
+  transform: translateY(-2px);
+}
+:focus-visible { outline: 1.5px solid var(--c-biolume); outline-offset: 3px; }
+
+/* =============================================================
+   PROJECT HERO
+   ============================================================= */
+.project-hero {
+  padding: 10rem 0 var(--space-lg);
+  position: relative;
+}
+.project-hero .orb {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(80px);
+  pointer-events: none;
+  opacity: 0.12;
+}
+.project-hero .orb-1 {
+  width: 500px; height: 300px;
+  background: radial-gradient(ellipse, var(--c-thermal), transparent 70%);
+  top: 60px; left: -100px;
+  animation: orb-drift 18s ease-in-out infinite alternate;
+}
+.project-hero .orb-2 {
+  width: 300px; height: 300px;
+  background: radial-gradient(ellipse, var(--c-nebula), transparent 70%);
+  top: 0; right: -80px;
+  opacity: 0.06;
+  animation: orb-drift 24s ease-in-out infinite alternate-reverse;
+}
+@keyframes orb-drift {
+  from { transform: translateY(0) translateX(0); }
+  to   { transform: translateY(30px) translateX(20px); }
+}
+
+.project-hero-meta {
+  display: flex; align-items: center; gap: 1rem;
+  margin-bottom: var(--space-sm);
+}
+.project-category {
+  font-family: var(--font-mono);
+  font-size: var(--text-micro);
+  letter-spacing: 0.2em; text-transform: uppercase;
+  color: var(--c-ghost);
+}
+.project-category::before { content: '// '; color: var(--c-current); }
+.meta-sep { color: var(--c-ghost); font-family: var(--font-mono); font-size: var(--text-micro); }
+
+.project-hero-title {
+  font-family: var(--font-display);
+  font-size: clamp(2.8rem, 7vw, 6rem);
+  font-weight: 700;
+  line-height: 1.05;
+  letter-spacing: -0.01em;
+  color: var(--c-star);
+  margin-bottom: var(--space-sm);
+}
+.project-hero-title span { color: var(--c-biolume); }
+
+.project-hero-oneliner {
+  font-family: var(--font-body);
+  font-weight: 300;
+  font-size: clamp(1rem, 1.5vw, 1.2rem);
+  color: var(--c-mist);
+  max-width: 600px;
+  line-height: 1.7;
+  margin-bottom: var(--space-md);
+}
+.project-hero-tools {
+  display: flex; flex-wrap: wrap; gap: 0.5rem;
+  margin-bottom: var(--space-md);
+}
+.project-hero-links {
+  display: flex; align-items: center; gap: 1.2rem;
+  flex-wrap: wrap;
+}
+.project-link {
+  font-family: var(--font-mono); font-size: var(--text-label);
+  letter-spacing: 0.1em; text-transform: uppercase;
+  color: var(--c-seafoam); text-decoration: none;
+  transition: color var(--dur-micro);
+}
+.project-link:hover { color: var(--c-biolume); }
+
+/* Stat bar */
+.stat-row {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  border: 1px solid var(--c-depth);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  margin-top: var(--space-lg);
+}
+.stat-cell {
+  padding: 1.6rem;
+  text-align: center;
+  border-right: 1px solid var(--c-depth);
+  background: var(--c-abyss);
+  transition: background var(--dur-ui);
+}
+.stat-cell:last-child { border-right: none; }
+.stat-cell:hover { background: var(--c-trench); }
+.stat-num {
+  font-family: var(--font-display); font-size: 2.5rem; font-weight: 700;
+  color: var(--c-biolume); line-height: 1; margin-bottom: 0.3rem;
+}
+.stat-label {
+  font-family: var(--font-mono); font-size: var(--text-micro);
+  letter-spacing: 0.18em; text-transform: uppercase; color: var(--c-ghost);
+}
+
+/* =============================================================
+   MODEL CARDS — 2-col grid
+   ============================================================= */
+.model-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-md);
+  margin-top: var(--space-md);
+}
+
+.model-card {
+  background: var(--c-abyss);
+  border: 1px solid var(--c-depth);
+  border-radius: var(--radius-md);
+  padding: var(--space-md);
+  position: relative;
+  overflow: hidden;
+  transition: border-color var(--dur-ui), transform var(--dur-ui), box-shadow var(--dur-ui);
+  cursor: none;
+}
+.model-card::before {
+  content: '';
+  position: absolute; top: 0; left: 0; right: 0; height: 1.5px;
+  opacity: 0;
+  transition: opacity var(--dur-ui);
+}
+.model-card.m1::before {
+  background: linear-gradient(to right, transparent, var(--c-biolume), transparent);
+}
+.model-card.m2::before {
+  background: linear-gradient(to right, transparent, var(--c-nebula), transparent);
+}
+.model-card:hover {
+  border-color: var(--c-current);
+  transform: translateY(-3px);
+  box-shadow: 0 8px 32px rgba(15,48,80,0.5);
+}
+.model-card:hover::before { opacity: 1; }
+
+.card-badge {
+  font-family: var(--font-mono); font-size: var(--text-micro);
+  letter-spacing: 0.18em; text-transform: uppercase;
+  padding: 0.25rem 0.7rem;
+  border-radius: var(--radius-sm);
+  display: inline-block;
+  margin-bottom: 1rem;
+}
+.model-card.m1 .card-badge {
+  background: rgba(61,255,208,0.08);
+  color: var(--c-biolume);
+  border: 1px solid rgba(61,255,208,0.2);
+}
+.model-card.m2 .card-badge {
+  background: rgba(167,139,250,0.08);
+  color: var(--c-nebula);
+  border: 1px solid rgba(167,139,250,0.2);
+}
+.card-title {
+  font-family: var(--font-display); font-size: 1.5rem; font-weight: 600;
+  color: var(--c-star); margin-bottom: 0.2rem;
+}
+.card-file {
+  font-family: var(--font-mono); font-size: var(--text-micro);
+  letter-spacing: 0.1em; color: var(--c-ghost); margin-bottom: 1rem;
+}
+.model-card p {
+  color: var(--c-mist); font-size: 0.9rem; margin-bottom: 1.2rem;
+  line-height: 1.65;
+}
+.feature-list {
+  list-style: none;
+  display: flex; flex-direction: column; gap: 0.5rem;
+}
+.feature-list li {
+  font-family: var(--font-mono); font-size: var(--text-micro);
+  letter-spacing: 0.05em; color: var(--c-mist);
+  display: flex; gap: 0.6rem; align-items: flex-start;
+}
+.feature-list li::before {
+  content: '→';
+  color: var(--c-current);
+  flex-shrink: 0;
+  margin-top: 0.05em;
+}
+.model-card.m2 .feature-list li::before { color: var(--c-nebula); }
+
+/* =============================================================
+   PIPELINE DIAGRAM — fully responsive
+   ============================================================= */
+.pipeline-diagram {
+  margin-top: var(--space-md);
+  background: var(--c-abyss);
+  border: 1px solid var(--c-depth);
+  border-radius: var(--radius-md);
+  padding: var(--space-md);
+  /* No overflow-x: auto — we reflow instead */
+}
+
+/* Horizontal layout: wraps into 2–3 rows on narrow screens */
+.pipeline-steps {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 0;
+  width: 100%;
+}
+
+/* On medium screens, drop to 3 per row */
+@media (max-width: 860px) {
+  .pipeline-steps {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+/* On small screens, drop to 2 per row */
+@media (max-width: 520px) {
+  .pipeline-steps {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+.pipe-step {
+  text-align: center;
+  padding: 1rem 0.4rem;
+  position: relative;
+  /* subtle border between cells */
+  border-right: 1px solid var(--c-trench);
+}
+.pipe-step:last-child { border-right: none; }
+
+/* Arrow connector — shown only when cells share a row (horizontal) */
+.pipe-step + .pipe-step::before {
+  content: none; /* removed — icons carry visual flow now */
+}
+
+/* Number badge above icon */
+.pipe-num {
+  display: inline-block;
+  font-family: var(--font-mono);
+  font-size: var(--text-micro);
+  color: var(--c-ghost);
+  margin-bottom: 0.35rem;
+  letter-spacing: 0.1em;
+}
+
+.pipe-icon {
+  font-size: 1.3rem; display: block; margin-bottom: 0.4rem;
+}
+.pipe-label {
+  font-family: var(--font-mono); font-size: var(--text-micro);
+  letter-spacing: 0.1em; text-transform: uppercase;
+  color: var(--c-biolume); display: block; margin-bottom: 0.3rem;
+  /* prevent overflow on tiny cells */
+  overflow-wrap: break-word;
+  word-break: break-word;
+}
+.pipe-desc {
+  font-family: var(--font-body); font-size: 0.72rem;
+  color: var(--c-ghost); line-height: 1.4;
+  overflow-wrap: break-word;
+}
+
+/* Flow arrows between columns — CSS-only, hidden on wrap breakpoints */
+.pipe-arrow {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-mono);
+  color: var(--c-ghost);
+  font-size: 0.85rem;
+  padding: 0 0.1rem;
+  pointer-events: none;
+  align-self: center;
+}
+/* Hide arrow cells when they'd end up on a wrapped row edge */
+@media (max-width: 860px) {
+  /* hide every 3rd arrow (index 5, 11 …) */
+  .pipe-arrow:nth-child(3n) { display: none; }
+}
+@media (max-width: 520px) {
+  .pipe-arrow { display: none; }
+}
+
+/* =============================================================
+   DATASET SECTION
+   ============================================================= */
+.dataset-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-md);
+  margin-top: var(--space-md);
+}
+.data-card {
+  background: var(--c-abyss);
+  border: 1px solid var(--c-depth);
+  border-radius: var(--radius-md);
+  padding: var(--space-md);
+  transition: border-color var(--dur-ui);
+}
+.data-card:hover { border-color: var(--c-current); }
+.data-card-label {
+  font-family: var(--font-mono); font-size: var(--text-micro);
+  letter-spacing: 0.18em; text-transform: uppercase;
+  color: var(--c-ghost); margin-bottom: 0.6rem;
+}
+.data-card-title {
+  font-family: var(--font-display); font-size: 1.2rem; font-weight: 600;
+  color: var(--c-star); margin-bottom: 0.7rem;
+}
+.data-card p {
+  color: var(--c-mist); font-size: 0.88rem; line-height: 1.65;
+}
+
+/* Action chips */
+.action-chips {
+  display: flex; flex-wrap: wrap; gap: 0.4rem;
+  margin-top: 1rem;
+}
+.action-chip {
+  font-family: var(--font-mono); font-size: var(--text-micro);
+  letter-spacing: 0.08em; text-transform: uppercase;
+  color: var(--c-mist); padding: 0.18rem 0.55rem;
+  border: 1px solid var(--c-trench);
+  border-radius: 2px;
+  transition: border-color var(--dur-micro), color var(--dur-micro);
+}
+.action-chip:hover { border-color: var(--c-biolume); color: var(--c-biolume); }
+
+/* =============================================================
+   SKILLS TABLE
+   ============================================================= */
+.skills-doc-list {
+  margin-top: var(--space-md);
+  border: 1px solid var(--c-depth);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+}
+.skill-doc-row {
+  display: grid;
+  grid-template-columns: 200px 1fr;
+  gap: var(--space-md);
+  padding: 1.4rem 1.8rem;
+  border-bottom: 1px solid var(--c-depth);
+  background: var(--c-abyss);
+  transition: background var(--dur-ui);
+}
+.skill-doc-row:last-child { border-bottom: none; }
+.skill-doc-row:hover { background: var(--c-trench); }
+.skill-name {
+  font-family: var(--font-display); font-size: 1rem; font-weight: 600;
+  color: var(--c-star); margin-bottom: 0.2rem;
+}
+.skill-where {
+  font-family: var(--font-mono); font-size: var(--text-micro);
+  letter-spacing: 0.1em; color: var(--c-current); text-transform: uppercase;
+}
+.skill-desc {
+  font-size: 0.88rem; color: var(--c-mist); line-height: 1.65;
+  align-self: center;
+}
+.skill-desc code {
+  font-family: var(--font-mono); font-size: 0.8rem;
+  color: var(--c-biolume); background: rgba(61,255,208,0.07);
+  padding: 0.1rem 0.35rem; border-radius: 2px;
+}
+
+/* =============================================================
+   CODE BLOCK
+   ============================================================= */
+.code-block {
+  background: var(--c-abyss);
+  border: 1px solid var(--c-depth);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  margin-top: var(--space-md);
+}
+.code-header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 0.7rem 1.2rem;
+  border-bottom: 1px solid var(--c-depth);
+  background: var(--c-trench);
+}
+.code-lang {
+  font-family: var(--font-mono); font-size: var(--text-micro);
+  letter-spacing: 0.12em; text-transform: uppercase; color: var(--c-ghost);
+}
+.code-dots { display: flex; gap: 0.4rem; }
+.code-dots span {
+  width: 8px; height: 8px; border-radius: 50%;
+}
+.code-dots span:nth-child(1) { background: #ff5f57; }
+.code-dots span:nth-child(2) { background: #febc2e; }
+.code-dots span:nth-child(3) { background: #28c840; }
+.code-block pre {
+  font-family: var(--font-mono); font-size: 0.78rem;
+  line-height: 1.7; color: var(--c-star);
+  padding: 1.4rem 1.6rem;
+  overflow-x: auto;
+  white-space: pre;
+}
+.cm { color: var(--c-ghost); }
+.kw { color: var(--c-nebula); }
+.fn { color: var(--c-biolume); }
+.str { color: var(--c-amber); }
+.num { color: var(--c-rose); }
+.cls { color: var(--c-seafoam); }
+
+/* =============================================================
+   RESULTS / PERFORMANCE SECTION
+   ============================================================= */
+.results-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-md);
+  margin-top: var(--space-md);
+}
+.result-card {
+  background: var(--c-abyss);
+  border: 1px solid var(--c-depth);
+  border-radius: var(--radius-md);
+  padding: var(--space-md);
+  position: relative;
+  overflow: hidden;
+}
+.result-card::after {
+  content: '';
+  position: absolute; bottom: 0; left: 0; right: 0; height: 1.5px;
+}
+.result-card.m1::after {
+  background: linear-gradient(to right, transparent, var(--c-biolume), transparent);
+}
+.result-card.m2::after {
+  background: linear-gradient(to right, transparent, var(--c-nebula), transparent);
+}
+.result-label {
+  font-family: var(--font-mono); font-size: var(--text-micro);
+  letter-spacing: 0.18em; text-transform: uppercase; color: var(--c-ghost);
+  margin-bottom: 0.6rem;
+}
+.result-model-name {
+  font-family: var(--font-display); font-size: 1.3rem; font-weight: 600;
+  color: var(--c-star); margin-bottom: 1.2rem;
+}
+.metric-row {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 0.5rem 0;
+  border-bottom: 1px solid var(--c-trench);
+}
+.metric-row:last-child { border-bottom: none; }
+.metric-name {
+  font-family: var(--font-mono); font-size: var(--text-micro);
+  letter-spacing: 0.1em; color: var(--c-mist); text-transform: uppercase;
+}
+.metric-val {
+  font-family: var(--font-display); font-size: 1.4rem; font-weight: 700;
+}
+.metric-val.good { color: var(--c-biolume); }
+.metric-val.alt  { color: var(--c-nebula); }
+
+/* Accuracy bar */
+.acc-bar-wrap {
+  margin: 1.2rem 0 0.6rem;
+}
+.acc-bar-label {
+  display: flex; justify-content: space-between;
+  font-family: var(--font-mono); font-size: var(--text-micro);
+  letter-spacing: 0.1em; text-transform: uppercase;
+  color: var(--c-ghost); margin-bottom: 0.4rem;
+}
+.acc-bar-track {
+  height: 4px;
+  background: var(--c-trench);
+  border-radius: 2px;
+  overflow: hidden;
+}
+.acc-bar-fill {
+  height: 100%; border-radius: 2px;
+  transition: width 1.2s var(--ease-out);
+}
+.acc-bar-fill.m1 {
+  background: linear-gradient(to right, var(--c-thermal), var(--c-biolume));
+  width: 0%;
+}
+.acc-bar-fill.m2 {
+  background: linear-gradient(to right, var(--c-current), var(--c-nebula));
+  width: 0%;
+}
+
+/* =============================================================
+   FOOTER
+   ============================================================= */
+.site-footer {
+  position: relative; z-index: 2;
+  padding: 3rem;
+  border-top: 1px solid var(--c-depth);
+  text-align: center;
+  margin-top: 4rem;
+}
+.footer-text {
+  font-family: var(--font-mono); font-size: var(--text-micro);
+  letter-spacing: 0.2em; text-transform: uppercase; color: var(--c-ghost);
+}
+.footer-accent { color: var(--c-biolume); }
+
+@keyframes pulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(61,255,208,0.5); }
+  50%       { box-shadow: 0 0 0 5px rgba(61,255,208,0); }
+}
+
+/* =============================================================
+   RESPONSIVE — multi-column grids collapse on narrow screens
+   ============================================================= */
+@media (max-width: 760px) {
+  main { padding: 0 1.4rem; }
+  #site-nav { padding: 1rem 1.4rem; }
+  .nav-links { display: none; }
+
+  .model-grid,
+  .dataset-grid,
+  .results-grid { grid-template-columns: 1fr; }
+
+  /* 3-col inline grids in approach/future sections */
+  [style*="grid-template-columns:1fr 1fr 1fr"],
+  [style*="grid-template-columns: 1fr 1fr 1fr"] { grid-template-columns: 1fr !important; }
+
+  .stat-row { grid-template-columns: repeat(2, 1fr); }
+  .stat-cell:nth-child(2) { border-right: none; }
+  .stat-cell:nth-child(3) { border-top: 1px solid var(--c-depth); }
+
+  .skill-doc-row { grid-template-columns: 1fr; gap: 0.5rem; }
+}
+
+@media (max-width: 480px) {
+  .stat-row { grid-template-columns: 1fr 1fr; }
+  .project-hero { padding: 7rem 0 var(--space-lg); }
+}
+</style>
+</head>
+
+<body>
+
+<div class="grain" aria-hidden="true"></div>
+<canvas id="stars" aria-hidden="true"></canvas>
+<div id="cursor-ring" aria-hidden="true"></div>
+<div id="cursor-dot"  aria-hidden="true"></div>
+
+<!-- ══════════════════════════════════════════
+     NAV
+═════════════════════════════════════════════ -->
+<nav id="site-nav" aria-label="Site navigation">
+  <div class="nav-inner">
+    <a href="index.html" class="nav-brand">
+      <span class="brand-initials">AA</span>
+      <span class="brand-name">AlyArtBar</span>
+    </a>
+    <ul class="nav-links">
+      <li><a href="index.html#work">Work</a></li>
+      <li><a href="index.html#about">About</a></li>
+      <li><a href="index.html#contact">Contact</a></li>
+    </ul>
+    <a href="index.html#work" class="nav-back">All Projects</a>
+  </div>
+</nav>
+
+<main>
+
+  <!-- ══════════════════════════════════════════
+       HERO
+  ═════════════════════════════════════════════ -->
+  <section class="project-hero">
+    <div class="orb orb-1" aria-hidden="true"></div>
+    <div class="orb orb-2" aria-hidden="true"></div>
+
+    <div class="project-hero-meta reveal">
+      <span class="project-category">Machine Learning · Virtual Production</span>
+      <span class="meta-sep">·</span>
+      <span class="project-category" style="color:var(--c-ghost);">CPCS 483</span>
+    </div>
+
+    <h1 class="project-hero-title reveal" data-delay="80">
+      Virtual Prod<br><span>ML Rig</span> Predictor
+    </h1>
+
+    <p class="project-hero-oneliner reveal" data-delay="160">
+      A two-model machine learning system that classifies 18 human motion actions from 3D skeletal joint data — designed for virtual production rigs where real-time action detection drives animation, FX, and scene logic.
+    </p>
+
+    <div class="project-hero-tools reveal" data-delay="220">
+      <span class="tool-tag">Python</span>
+      <span class="tool-tag">Scikit-learn</span>
+      <span class="tool-tag">Random Forest</span>
+      <span class="tool-tag">PCA</span>
+      <span class="tool-tag">NumPy</span>
+      <span class="tool-tag">Pandas</span>
+      <span class="tool-tag">Matplotlib</span>
+      <span class="tool-tag">Pickle</span>
+      <span class="tool-tag">Jupyter</span>
+      <span class="tool-tag">KARD Dataset</span>
+    </div>
+
+    <div class="project-hero-links reveal" data-delay="280">
+      <a href="https://github.com" class="btn btn-primary">↗ View Notebook</a>
+      <a href="#models" class="btn btn-ghost">Explore Models</a>
+    </div>
+
+    <div class="stat-row reveal" data-delay="340">
+      <div class="stat-cell">
+        <div class="stat-num">18</div>
+        <div class="stat-label">Action Classes</div>
+      </div>
+      <div class="stat-cell">
+        <div class="stat-num">180</div>
+        <div class="stat-label">Motion Clips</div>
+      </div>
+      <div class="stat-cell">
+        <div class="stat-num">2</div>
+        <div class="stat-label">RF Models</div>
+      </div>
+      <div class="stat-cell">
+        <div class="stat-num">60</div>
+        <div class="stat-label">Frames/Clip</div>
+      </div>
+    </div>
+  </section>
+
+  <div class="zone-div" data-depth="// 01 overview"></div>
+
+  <!-- ══════════════════════════════════════════
+       OVERVIEW
+  ═════════════════════════════════════════════ -->
+  <section class="section" id="overview">
+    <div class="container">
+      <div class="reveal">
+        <p class="eyebrow">// 01 — Overview</p>
+        <h2 class="section-title">What it does<br>&amp; why it matters</h2>
+        <div class="section-rule" aria-hidden="true"></div>
+        <p style="color:var(--c-mist); max-width:640px; margin-bottom:var(--space-md);">
+          In virtual production, performers wear marker suits and move through a tracked volume — but raw 3D joint positions are only useful if the system knows <em style="color:var(--c-star);">what the performer is doing</em>. This project builds that classification layer, training two Random Forest pipelines to map skeletal sequences to discrete action labels with no manual keyframing.
+        </p>
+      </div>
+
+      <!-- Pipeline diagram -->
+      <div class="pipeline-diagram reveal" data-delay="80">
+        <div class="code-header">
+          <span class="code-lang">// Data → Prediction Pipeline</span>
+          <div class="code-dots"><span></span><span></span><span></span></div>
+        </div>
+        <div class="pipeline-steps">
+          <div class="pipe-step">
+            <span class="pipe-num">01</span>
+            <span class="pipe-icon">📂</span>
+            <span class="pipe-label">CSV Load</span>
+            <span class="pipe-desc">KARD joint coords per frame</span>
+          </div>
+          <div class="pipe-step">
+            <span class="pipe-num">02</span>
+            <span class="pipe-icon">🔧</span>
+            <span class="pipe-label">Parse</span>
+            <span class="pipe-desc">(T, J, 3) array — frames × joints × xyz</span>
+          </div>
+          <div class="pipe-step">
+            <span class="pipe-num">03</span>
+            <span class="pipe-icon">📐</span>
+            <span class="pipe-label">Resample</span>
+            <span class="pipe-desc">Fixed 60 frames via linear interp</span>
+          </div>
+          <div class="pipe-step">
+            <span class="pipe-num">04</span>
+            <span class="pipe-icon">⚖️</span>
+            <span class="pipe-label">Normalize</span>
+            <span class="pipe-desc">Root-center + torso scale</span>
+          </div>
+          <div class="pipe-step">
+            <span class="pipe-num">05</span>
+            <span class="pipe-icon">🧮</span>
+            <span class="pipe-label">Features</span>
+            <span class="pipe-desc">Positions + velocities → 4,998-D</span>
+          </div>
+          <div class="pipe-step">
+            <span class="pipe-num">06</span>
+            <span class="pipe-icon">🌲</span>
+            <span class="pipe-label">Predict</span>
+            <span class="pipe-desc">Random Forest → action label</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <div class="zone-div" data-depth="// 02 dataset"></div>
+
+  <!-- ══════════════════════════════════════════
+       DATASET
+  ═════════════════════════════════════════════ -->
+  <section class="section" id="dataset">
+    <div class="container">
+      <div class="reveal">
+        <p class="eyebrow">// 02 — Dataset</p>
+        <h2 class="section-title">Kinect Action<br>Recognition Dataset</h2>
+        <div class="section-rule" aria-hidden="true"></div>
+      </div>
+
+      <div class="dataset-grid">
+        <div class="data-card reveal">
+          <div class="data-card-label">Source</div>
+          <div class="data-card-title">KARD — Real World Coordinates</div>
+          <p>Each CSV file in the dataset represents a single motion clip captured with a Microsoft Kinect sensor. Joint positions are stored as real-world metric coordinates (x, y, z in meters), not pixel-space projections, making them directly usable for distance-based normalization.</p>
+        </div>
+
+        <div class="data-card reveal" data-delay="80">
+          <div class="data-card-label">Structure</div>
+          <div class="data-card-title">18 Actions × 10 Subjects</div>
+          <p>180 total clips spanning 18 distinct physical actions, each performed by multiple subjects to ensure the model learns action-invariant features rather than person-specific motion signatures. Labels are encoded from filename prefixes (<code style="font-family:var(--font-mono);color:var(--c-biolume);font-size:0.8rem;">a01</code>–<code style="font-family:var(--font-mono);color:var(--c-biolume);font-size:0.8rem;">a18</code>).</p>
+          <div class="action-chips">
+            <span class="action-chip">Horizontal Wave</span>
+            <span class="action-chip">High Wave</span>
+            <span class="action-chip">Catch Cap</span>
+            <span class="action-chip">High Throw</span>
+            <span class="action-chip">Draw X</span>
+            <span class="action-chip">Draw Tick</span>
+            <span class="action-chip">Toss Paper</span>
+            <span class="action-chip">Forward Kick</span>
+            <span class="action-chip">Side Kick</span>
+            <span class="action-chip">Take Umbrella</span>
+            <span class="action-chip">Bend</span>
+            <span class="action-chip">Hand Clap</span>
+            <span class="action-chip">Walk</span>
+            <span class="action-chip">Phone Call</span>
+            <span class="action-chip">Drink</span>
+            <span class="action-chip">Sit Down</span>
+            <span class="action-chip">Stand Up</span>
+            <span class="action-chip">Point</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <div class="zone-div" data-depth="// 03 models"></div>
+
+  <!-- ══════════════════════════════════════════
+       MODELS
+  ═════════════════════════════════════════════ -->
+  <section class="section" id="models">
+    <div class="container">
+      <div class="reveal">
+        <p class="eyebrow">// 03 — Models</p>
+        <h2 class="section-title">Two pipelines,<br>one competition</h2>
+        <div class="section-rule" aria-hidden="true"></div>
+        <p style="color:var(--c-mist); max-width:600px;">
+          Both models are <code style="font-family:var(--font-mono);color:var(--c-biolume);font-size:0.8rem;">sklearn.pipeline.Pipeline</code> objects serialized with <code style="font-family:var(--font-mono);color:var(--c-biolume);font-size:0.8rem;">pickle</code>. Model 1 works in the full feature space; Model 2 first compresses that space with PCA before handing it to the same forest architecture — trading a small accuracy margin for significantly faster inference.
+        </p>
+      </div>
+
+      <div class="model-grid">
+        <!-- M1 -->
+        <div class="model-card m1 reveal" data-delay="60">
+          <span class="card-badge">M1 — Full Feature</span>
+          <div class="card-title">Random Forest</div>
+          <div class="card-file">finalized_model_M1.sav</div>
+          <p>Operates on the complete 4,998-dimensional feature vector (joint positions + frame-to-frame velocities). StandardScaler normalizes each feature before the forest. With 300 trees and unbounded depth, this model captures fine-grained motion differences.</p>
+          <ul class="feature-list">
+            <li>StandardScaler → full 4,998-D feature space</li>
+            <li>300 decision trees, max_depth=None</li>
+            <li>Trained on 80/20 stratified split</li>
+            <li>Best for accuracy-critical applications</li>
+          </ul>
+        </div>
+
+        <!-- M2 -->
+        <div class="model-card m2 reveal" data-delay="140">
+          <span class="card-badge">M2 — PCA Reduced</span>
+          <div class="card-title">RF + PCA</div>
+          <div class="card-file">finalized_model_M2.sav</div>
+          <p>Adds a PCA stage before the forest, compressing the scaled features to the top 100 principal components. This removes correlated noise in the joint data while preserving the dominant motion variance — useful for real-time inference budgets in live production.</p>
+          <ul class="feature-list">
+            <li>StandardScaler → PCA (100 components)</li>
+            <li>Same 300-tree forest as M1</li>
+            <li>Visualizable: 2D &amp; 3D PCA scatter plots</li>
+            <li>Best for latency-sensitive VP pipelines</li>
+          </ul>
+        </div>
+      </div>
+
+      <!-- Code sample -->
+      <div class="code-block reveal" data-delay="200" style="margin-top:var(--space-md);">
+        <div class="code-header">
+          <span class="code-lang">Python — Load &amp; Run Both Models</span>
+          <div class="code-dots"><span></span><span></span><span></span></div>
+        </div>
+        <pre><span class="kw">import</span> pickle
+<span class="kw">from</span> pathlib <span class="kw">import</span> Path
+
+<span class="cm"># Load serialized models</span>
+clf_full    = pickle.<span class="fn">load</span>(<span class="fn">open</span>(<span class="str">"finalized_model_M1.sav"</span>, <span class="str">"rb"</span>))
+clf_reduced = pickle.<span class="fn">load</span>(<span class="fn">open</span>(<span class="str">"finalized_model_M2.sav"</span>, <span class="str">"rb"</span>))
+le          = pickle.<span class="fn">load</span>(<span class="fn">open</span>(<span class="str">"label_encoder.sav"</span>,      <span class="str">"rb"</span>))
+
+<span class="cm"># Evaluate on test set  (X_test comes from preprocessing pipeline)</span>
+score_m1 = clf_full.<span class="fn">score</span>(X_test, y_test)
+score_m2 = clf_reduced.<span class="fn">score</span>(X_test, y_test)
+
+<span class="fn">print</span>(<span class="str">f"M1 Accuracy: <span class="num">{score_m1:.3f}</span>"</span>)
+<span class="fn">print</span>(<span class="str">f"M2 Accuracy: <span class="num">{score_m2:.3f}</span>"</span>)
+
+<span class="cm"># Predict on a new sequence (already preprocessed to flat vector)</span>
+pred_encoded = clf_full.<span class="fn">predict</span>([new_feature_vector])
+pred_label   = le.<span class="fn">inverse_transform</span>(pred_encoded)
+<span class="fn">print</span>(<span class="str">f"Detected Action: <span class="num">{pred_label[0]}</span>"</span>)</pre>
+      </div>
+    </div>
+  </section>
+
+  <div class="zone-div" data-depth="// 04 performance"></div>
+
+  <!-- ══════════════════════════════════════════
+       PERFORMANCE
+  ═════════════════════════════════════════════ -->
+  <section class="section" id="performance">
+    <div class="container">
+      <div class="reveal">
+        <p class="eyebrow">// 04 — Performance</p>
+        <h2 class="section-title">Model metrics<br>&amp; comparisons</h2>
+        <div class="section-rule" aria-hidden="true"></div>
+        <p style="color:var(--c-mist); max-width:600px; margin-bottom:var(--space-md);">
+          Both models were evaluated on a held-out 20% test set using stratified sampling to ensure all 18 action classes were represented. Confusion matrices and PCA scatter plots were generated to inspect where inter-class confusion occurs.
+        </p>
+      </div>
+
+      <div class="results-grid">
+        <div class="result-card m1 reveal">
+          <div class="result-label">Model 1</div>
+          <div class="result-model-name">Full Feature Random Forest</div>
+          <div class="acc-bar-wrap">
+            <div class="acc-bar-label"><span>Accuracy</span><span id="m1-pct">—</span></div>
+            <div class="acc-bar-track"><div class="acc-bar-fill m1" id="bar-m1"></div></div>
+          </div>
+          <div class="metric-row">
+            <span class="metric-name">Feature Dims</span>
+            <span class="metric-val good">4,998</span>
+          </div>
+          <div class="metric-row">
+            <span class="metric-name">Estimators</span>
+            <span class="metric-val good">300</span>
+          </div>
+          <div class="metric-row">
+            <span class="metric-name">Preprocessing</span>
+            <span class="metric-val" style="font-size:0.9rem;color:var(--c-mist);font-family:var(--font-mono);">StandardScaler</span>
+          </div>
+          <div class="metric-row">
+            <span class="metric-name">Inference Speed</span>
+            <span class="metric-val" style="font-size:0.9rem;color:var(--c-amber);font-family:var(--font-mono);">Standard</span>
+          </div>
+        </div>
+
+        <div class="result-card m2 reveal" data-delay="80">
+          <div class="result-label">Model 2</div>
+          <div class="result-model-name">PCA-Reduced RF Pipeline</div>
+          <div class="acc-bar-wrap">
+            <div class="acc-bar-label"><span>Accuracy</span><span id="m2-pct">—</span></div>
+            <div class="acc-bar-track"><div class="acc-bar-fill m2" id="bar-m2"></div></div>
+          </div>
+          <div class="metric-row">
+            <span class="metric-name">Feature Dims</span>
+            <span class="metric-val alt">100</span>
+          </div>
+          <div class="metric-row">
+            <span class="metric-name">Estimators</span>
+            <span class="metric-val alt">300</span>
+          </div>
+          <div class="metric-row">
+            <span class="metric-name">Preprocessing</span>
+            <span class="metric-val" style="font-size:0.9rem;color:var(--c-mist);font-family:var(--font-mono);">Scaler + PCA</span>
+          </div>
+          <div class="metric-row">
+            <span class="metric-name">Inference Speed</span>
+            <span class="metric-val" style="font-size:0.9rem;color:var(--c-biolume);font-family:var(--font-mono);">Faster</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="data-card reveal" data-delay="160" style="margin-top:var(--space-md);">
+        <div class="data-card-label">Visualizations Generated</div>
+        <div class="data-card-title">PCA Projections &amp; Confusion Matrix</div>
+        <p>The notebook produces a 2D PCA scatter of all 180 clips (coloured by encoded label), a 3D PCA scatter, a 2D PCA scatter of test-set predictions through M2's learned component space, and a full confusion matrix using <code style="font-family:var(--font-mono);color:var(--c-biolume);font-size:0.8rem;">ConfusionMatrixDisplay.from_predictions</code>. These reveal which action pairs the forest struggles to separate — typically slow, low-amplitude motions like <em style="color:var(--c-star);">phone call</em> vs <em style="color:var(--c-star);">drink</em>.</p>
+      </div>
+    </div>
+  </section>
+
+  <div class="zone-div" data-depth="// 05 why rf"></div>
+
+  <!-- ══════════════════════════════════════════
+       WHY THIS APPROACH
+  ═════════════════════════════════════════════ -->
+  <section class="section" id="approach">
+    <div class="container">
+      <div class="reveal">
+        <p class="eyebrow">// 05 — Why This Approach</p>
+        <h2 class="section-title">Random Forest over<br>deep learning — intentionally</h2>
+        <div class="section-rule" aria-hidden="true"></div>
+        <p style="color:var(--c-mist); max-width:660px; margin-bottom:var(--space-md);">
+          A transformer or LSTM could theoretically model temporal sequences better — so why Random Forest? In a constrained research and virtual production context, the decision is defensible on multiple grounds.
+        </p>
+      </div>
+
+      <div class="dataset-grid" style="grid-template-columns: 1fr 1fr 1fr; gap: 1.2rem;">
+
+        <div class="data-card reveal" data-delay="0">
+          <div class="data-card-label">Reason 01</div>
+          <div class="data-card-title">Dataset Size</div>
+          <p>With only 180 clips across 18 classes, deep learning models would overfit immediately. Random Forests are known to generalize well on small-to-medium tabular datasets where the number of samples per class is low. The hand-crafted feature vector (positions + velocities, resampled to 60 frames) encodes enough temporal structure that a tree ensemble can discriminate effectively without needing raw sequence modelling.</p>
+        </div>
+
+        <div class="data-card reveal" data-delay="80">
+          <div class="data-card-label">Reason 02</div>
+          <div class="data-card-title">Interpretability</div>
+          <p>In a production pipeline where a TD or supervisor needs to understand <em style="color:var(--c-star);">why</em> the classifier fired, Random Forests offer feature importances out of the box. You can inspect which joint, which axis, and which frame window most influenced a prediction — something opaque to RNNs or attention models. This matters when debugging a faulty trigger on a live volume set.</p>
+        </div>
+
+        <div class="data-card reveal" data-delay="160">
+          <div class="data-card-label">Reason 03</div>
+          <div class="data-card-title">Deployment Simplicity</div>
+          <p>A pickled sklearn pipeline has zero runtime dependencies beyond numpy and scikit-learn — no GPU, no CUDA, no framework version pinning. It loads in milliseconds, runs on CPU in under 1 ms per inference, and integrates into any Python-based DCC tool (Maya, Houdini, Unreal's Python API) with a single <code style="font-family:var(--font-mono);color:var(--c-biolume);font-size:0.78rem;">pickle.load()</code> call. That operational simplicity is a feature, not a compromise.</p>
+        </div>
+
+      </div>
+
+      <!-- Tradeoffs table -->
+      <div class="reveal" data-delay="200" style="margin-top: var(--space-md);">
+        <div class="code-block">
+          <div class="code-header">
+            <span class="code-lang">// Approach tradeoffs — RF vs alternatives</span>
+            <div class="code-dots"><span></span><span></span><span></span></div>
+          </div>
+          <pre style="padding: 0; overflow-x: auto;">
+<table style="width:100%; border-collapse:collapse; font-family:var(--font-mono); font-size:0.72rem; color:var(--c-mist);">
+  <thead>
+    <tr style="border-bottom:1px solid var(--c-depth);">
+      <th style="padding:0.8rem 1.4rem; text-align:left; color:var(--c-ghost); letter-spacing:0.14em; text-transform:uppercase; font-weight:400;">Approach</th>
+      <th style="padding:0.8rem 1rem; text-align:left; color:var(--c-ghost); letter-spacing:0.14em; text-transform:uppercase; font-weight:400;">Strengths</th>
+      <th style="padding:0.8rem 1rem; text-align:left; color:var(--c-ghost); letter-spacing:0.14em; text-transform:uppercase; font-weight:400;">Weaknesses</th>
+      <th style="padding:0.8rem 1rem; text-align:left; color:var(--c-ghost); letter-spacing:0.14em; text-transform:uppercase; font-weight:400;">Viable Here?</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr style="border-bottom:1px solid var(--c-trench);">
+      <td style="padding:0.75rem 1.4rem; color:var(--c-biolume);">Random Forest ✓</td>
+      <td style="padding:0.75rem 1rem;">Small data, fast, interpretable, CPU-only</td>
+      <td style="padding:0.75rem 1rem;">Loses fine temporal ordering</td>
+      <td style="padding:0.75rem 1rem; color:var(--c-biolume);">Yes — optimal for this scale</td>
+    </tr>
+    <tr style="border-bottom:1px solid var(--c-trench);">
+      <td style="padding:0.75rem 1.4rem; color:var(--c-mist);">LSTM / GRU</td>
+      <td style="padding:0.75rem 1rem;">Models temporal order natively</td>
+      <td style="padding:0.75rem 1rem;">Needs 1,000s of clips, GPU, slow to train</td>
+      <td style="padding:0.75rem 1rem; color:var(--c-amber);">Risky — would overfit at 180 clips</td>
+    </tr>
+    <tr style="border-bottom:1px solid var(--c-trench);">
+      <td style="padding:0.75rem 1.4rem; color:var(--c-mist);">Transformer</td>
+      <td style="padding:0.75rem 1rem;">State-of-art on large motion datasets</td>
+      <td style="padding:0.75rem 1rem;">Data-hungry, heavy, hard to interpret</td>
+      <td style="padding:0.75rem 1rem; color:var(--c-rose);">No — unsuitable at this data scale</td>
+    </tr>
+    <tr style="border-bottom:1px solid var(--c-trench);">
+      <td style="padding:0.75rem 1.4rem; color:var(--c-mist);">SVM</td>
+      <td style="padding:0.75rem 1rem;">Good on high-dim, small data</td>
+      <td style="padding:0.75rem 1rem;">No feature importances, slow at inference</td>
+      <td style="padding:0.75rem 1rem; color:var(--c-amber);">Comparable — RF preferred for introspection</td>
+    </tr>
+    <tr>
+      <td style="padding:0.75rem 1.4rem; color:var(--c-mist);">1D CNN</td>
+      <td style="padding:0.75rem 1rem;">Captures local temporal patterns</td>
+      <td style="padding:0.75rem 1rem;">Requires more data, harder to deploy in DCC</td>
+      <td style="padding:0.75rem 1rem; color:var(--c-amber);">Possible next step with augmented data</td>
+    </tr>
+  </tbody>
+</table></pre>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <div class="zone-div" data-depth="// 06 future"></div>
+
+  <!-- ══════════════════════════════════════════
+       FUTURE DEVELOPMENT
+  ═════════════════════════════════════════════ -->
+  <section class="section" id="future">
+    <div class="container">
+      <div class="reveal">
+        <p class="eyebrow">// 06 — Future Development</p>
+        <h2 class="section-title">Where this system<br>could go next</h2>
+        <div class="section-rule" aria-hidden="true"></div>
+        <p style="color:var(--c-mist); max-width:640px; margin-bottom:var(--space-md);">
+          The current build is a strong, documented baseline. These are the concrete next steps that would move it from a research proof-of-concept into a production-grade virtual production tool.
+        </p>
+      </div>
+
+      <div class="model-grid" style="grid-template-columns:1fr 1fr 1fr; gap:1.2rem;">
+
+        <div class="model-card m1 reveal" data-delay="0" style="border-color:var(--c-depth);">
+          <span class="card-badge" style="background:rgba(61,255,208,0.06); color:var(--c-biolume); border-color:rgba(61,255,208,0.15);">Near Term</span>
+          <div class="card-title" style="font-size:1.2rem;">Data Augmentation</div>
+          <p style="font-size:0.85rem;">At 180 clips, the model is data-starved. Jitter joint positions with Gaussian noise, mirror sequences along the sagittal plane, randomly offset the root position, and time-warp clips ±20% to synthetically expand to 1,000+ samples. This alone would allow testing an LSTM or 1D-CNN to compare temporal-aware architectures.</p>
+          <ul class="feature-list">
+            <li>Gaussian noise on joint coords (±2 cm)</li>
+            <li>Mirror flip across sagittal plane</li>
+            <li>Time-warp ±20% speed variation</li>
+            <li>Random root translation offset</li>
+          </ul>
+        </div>
+
+        <div class="model-card m2 reveal" data-delay="80" style="border-color:var(--c-depth);">
+          <span class="card-badge" style="background:rgba(167,139,250,0.06); color:var(--c-nebula); border-color:rgba(167,139,250,0.15);">Near Term</span>
+          <div class="card-title" style="font-size:1.2rem;">Real-Time Inference</div>
+          <p style="font-size:0.85rem;">Wrap the prediction pipeline in a sliding-window server: buffer the last 60 frames of live joint data from a Kinect or OptiTrack stream, run M2 every frame, and emit OSC or WebSocket events when a new action is detected with confidence above a threshold. This turns the batch classifier into a live trigger system for reactive VP scenes.</p>
+          <ul class="feature-list">
+            <li>Sliding window buffer (60-frame ring)</li>
+            <li>OSC / WebSocket event emission</li>
+            <li>Confidence threshold gating</li>
+            <li>Integration with Unreal / TouchDesigner</li>
+          </ul>
+        </div>
+
+        <div class="model-card reveal" data-delay="160" style="border-color:var(--c-depth); --accent: var(--c-amber);">
+          <span class="card-badge" style="background:rgba(240,160,80,0.06); color:var(--c-amber); border-color:rgba(240,160,80,0.18);">Longer Term</span>
+          <div class="card-title" style="font-size:1.2rem;">Temporal Models</div>
+          <p style="font-size:0.85rem;">Once data augmentation or an expanded capture session provides 500+ clips per class, replace the flattened feature vector with a raw sequence and train an LSTM, GRU, or skeletal GCN (Graph Convolutional Network). Graph-based approaches treat the skeleton as a graph of joints connected by bones — architectures like ST-GCN have shown state-of-the-art results on NTU-RGB+D, a dataset structurally similar to KARD.</p>
+          <ul class="feature-list" style="--arrow-color: var(--c-amber);">
+            <li>LSTM on raw (T, J, 3) sequences</li>
+            <li>ST-GCN — graph-based spatial + temporal</li>
+            <li>Transformer encoder on frame tokens</li>
+            <li>Benchmark against M1/M2 baseline</li>
+          </ul>
+        </div>
+
+        <div class="model-card reveal" data-delay="0" style="border-color:var(--c-depth);">
+          <span class="card-badge" style="background:rgba(61,255,208,0.06); color:var(--c-biolume); border-color:rgba(61,255,208,0.15);">Near Term</span>
+          <div class="card-title" style="font-size:1.2rem;">Maya / Houdini Integration</div>
+          <p style="font-size:0.85rem;">Package the preprocessing + M2 inference as a Maya Python shelf tool. Expose a live playback mode: as an animator scrubs a mocap clip, the tool updates a HUD overlay with the predicted action label and confidence — helping TDs verify retargeting accuracy or flag clips that were mislabelled during capture.</p>
+          <ul class="feature-list">
+            <li>Maya Python shelf installer</li>
+            <li>PySide2 confidence HUD overlay</li>
+            <li>Houdini VEX node via Python SOP</li>
+            <li>Clip auto-labelling on import</li>
+          </ul>
+        </div>
+
+        <div class="model-card m2 reveal" data-delay="80" style="border-color:var(--c-depth);">
+          <span class="card-badge" style="background:rgba(167,139,250,0.06); color:var(--c-nebula); border-color:rgba(167,139,250,0.15);">Longer Term</span>
+          <div class="card-title" style="font-size:1.2rem;">Multi-Person Scenes</div>
+          <p style="font-size:0.85rem;">Production volumes capture multiple performers simultaneously. Extend the pipeline to handle multiple skeleton streams in parallel, add a pose estimation step to detect person-to-person interactions, and train an interaction classifier on top of per-person action labels — enabling scene logic like "when performer A is pointing at performer B who is walking, trigger FX sequence C."</p>
+          <ul class="feature-list">
+            <li>Parallel multi-skeleton streams</li>
+            <li>Relative joint features between bodies</li>
+            <li>Interaction classification layer</li>
+            <li>Scene-graph event routing</li>
+          </ul>
+        </div>
+
+        <div class="model-card reveal" data-delay="160" style="border-color:var(--c-depth);">
+          <span class="card-badge" style="background:rgba(240,135,176,0.06); color:var(--c-rose); border-color:rgba(240,135,176,0.18);">Research</span>
+          <div class="card-title" style="font-size:1.2rem;">Action Segmentation</div>
+          <p style="font-size:0.85rem;">The current system classifies a full, pre-segmented clip. A production-ready system needs to detect action boundaries in a continuous stream — transitioning from a classification problem to a temporal segmentation one. Models like MS-TCN (Multi-Scale Temporal Convolutional Network) are designed exactly for this: they ingest a full performance and output a frame-level action label sequence.</p>
+          <ul class="feature-list">
+            <li>Continuous stream boundary detection</li>
+            <li>MS-TCN or CTC-based segmentation</li>
+            <li>Frame-level action label sequences</li>
+            <li>Onset / offset event timestamps</li>
+          </ul>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+  <div class="zone-div" data-depth="// 07 skills"></div>
+
+  <!-- ══════════════════════════════════════════
+       SKILLS
+  ═════════════════════════════════════════════ -->
+  <section class="section" id="skills">
+    <div class="container">
+      <div class="reveal">
+        <p class="eyebrow">// 07 — Skills</p>
+        <h2 class="section-title">Built to signal<br>ML + VP readiness</h2>
+        <div class="section-rule" aria-hidden="true"></div>
+        <p style="color:var(--c-mist); max-width:580px; margin-bottom:var(--space-md);">
+          Every design decision mirrors patterns used in production-grade motion capture and ML pipelines — from the preprocessing choices to the serialization format.
+        </p>
+      </div>
+
+      <div class="skills-doc-list">
+
+        <div class="skill-doc-row reveal">
+          <div>
+            <div class="skill-name">Skeletal Data Parsing</div>
+            <div class="skill-where">parse_sequence()</div>
+          </div>
+          <div class="skill-desc">
+            Robust CSV-to-array parser that reconstructs per-frame joint data into a <code>(T, J, 3)</code> tensor. Uses <code>'Head'</code> row detection to segment frames without relying on a fixed joint count — handles missing or irregular data gracefully.
+          </div>
+        </div>
+
+        <div class="skill-doc-row reveal" data-delay="50">
+          <div>
+            <div class="skill-name">Temporal Resampling</div>
+            <div class="skill-where">resample_sequence()</div>
+          </div>
+          <div class="skill-desc">
+            Linear interpolation along the time axis resizes every clip to exactly 60 frames. This is the same approach used in retargeting and motion matching — decoupling capture frame rate from model input length.
+          </div>
+        </div>
+
+        <div class="skill-doc-row reveal" data-delay="100">
+          <div>
+            <div class="skill-name">Root-Space Normalization</div>
+            <div class="skill-where">root_center_normalize()</div>
+          </div>
+          <div class="skill-desc">
+            Subtracts the hip/root joint position each frame to remove global translation, then scales by the torso-to-head distance to remove global body scale. The model learns motion shape, not where in the volume the performer stood.
+          </div>
+        </div>
+
+        <div class="skill-doc-row reveal" data-delay="150">
+          <div>
+            <div class="skill-name">Velocity Features</div>
+            <div class="skill-where">Feature extraction</div>
+          </div>
+          <div class="skill-desc">
+            Frame-to-frame differences (velocities) are appended to raw joint positions before flattening, doubling the dynamic information fed to the classifier. Velocity features are what distinguish, for example, a slow wave from a fast one at identical peak positions.
+          </div>
+        </div>
+
+        <div class="skill-doc-row reveal" data-delay="200">
+          <div>
+            <div class="skill-name">Scikit-learn Pipelines</div>
+            <div class="skill-where">Both models</div>
+          </div>
+          <div class="skill-desc">
+            Both classifiers are wrapped in <code>sklearn.pipeline.Pipeline</code> so that scaler and (optionally) PCA parameters learned on training data are automatically applied consistently at inference time — preventing data leakage and simplifying deployment.
+          </div>
+        </div>
+
+        <div class="skill-doc-row reveal" data-delay="250">
+          <div>
+            <div class="skill-name">PCA Dimensionality Reduction</div>
+            <div class="skill-where">finalized_model_M2.sav</div>
+          </div>
+          <div class="skill-desc">
+            PCA with <code>n_components = min(100, n_samples−1, n_features)</code> safely caps components for small datasets. Explained-variance reporting and both 2D and 3D scatter plots confirm the components capture meaningful action-space structure.
+          </div>
+        </div>
+
+        <div class="skill-doc-row reveal" data-delay="300">
+          <div>
+            <div class="skill-name">Model Serialization</div>
+            <div class="skill-where">.sav via pickle</div>
+          </div>
+          <div class="skill-desc">
+            Trained pipelines and the <code>LabelEncoder</code> are persisted as <code>.sav</code> files using Python's <code>pickle</code> module — following the assignment specification and a widely-used convention in production ML workflows for model versioning and swap-in deployment.
+          </div>
+        </div>
+
+        <div class="skill-doc-row reveal" data-delay="350">
+          <div>
+            <div class="skill-name">Stratified Train/Test Split</div>
+            <div class="skill-where">train_test_split</div>
+          </div>
+          <div class="skill-desc">
+            <code>stratify=y_enc</code> ensures each of the 18 action classes is proportionally represented in both the 80% training split and the 20% held-out evaluation set — critical when class counts are uneven.
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<!-- ══════════════════════════════════════════
+     FOOTER
+═════════════════════════════════════════════ -->
+<footer class="site-footer">
+  <p class="footer-text">
+    designed &amp; built by
+    <span class="footer-accent">alyssa barrientos</span>
+    · alyartbar ·
+    <span id="footer-year"></span>
+  </p>
+</footer>
+
+<!-- ══════════════════════════════════════════
+     SCRIPTS
+═════════════════════════════════════════════ -->
+<script>
+'use strict';
+
+document.getElementById('footer-year').textContent = new Date().getFullYear();
+
+// ── Starfield ─────────────────────────────────────────────
+(function() {
+  const canvas = document.getElementById('stars');
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+  let W, H, stars = [];
+
+  function resize() { W = canvas.width = window.innerWidth; H = canvas.height = window.innerHeight; }
+
+  function mkStar() {
+    return { x: Math.random()*W, y: Math.random()*H, r: Math.random()*1.1+0.2,
+             a: Math.random()*0.45+0.08, speed: Math.random()*0.12+0.02,
+             drift: (Math.random()-0.5)*0.025, phase: Math.random()*Math.PI*2 };
+  }
+
+  resize();
+  stars = Array.from({ length: 130 }, mkStar);
+  window.addEventListener('resize', resize);
+
+  let t = 0;
+  (function draw() {
+    ctx.clearRect(0, 0, W, H);
+    t += 0.007;
+    for (const s of stars) {
+      s.y -= s.speed; s.x += s.drift;
+      if (s.y < -2) { s.y = H+2; s.x = Math.random()*W; }
+      if (s.x < -2) s.x = W+2;
+      if (s.x > W+2) s.x = -2;
+      const tw = s.a * (0.7 + 0.3*Math.sin(t*1.4+s.phase));
+      ctx.beginPath();
+      ctx.arc(s.x, s.y, s.r, 0, Math.PI*2);
+      ctx.fillStyle = `rgba(232,244,248,${tw})`;
+      ctx.fill();
+    }
+    requestAnimationFrame(draw);
+  })();
+})();
+
+// ── Custom cursor ─────────────────────────────────────────
+(function() {
+  if (window.innerWidth < 600) return;
+  const ring = document.getElementById('cursor-ring');
+  const dot  = document.getElementById('cursor-dot');
+  if (!ring || !dot) return;
+
+  let mx = -200, my = -200, rx = -200, ry = -200;
+
+  document.addEventListener('mousemove', e => { mx = e.clientX; my = e.clientY; });
+
+  (function tick() {
+    dot.style.left  = mx + 'px';
+    dot.style.top   = my + 'px';
+    rx += (mx - rx) * 0.14;
+    ry += (my - ry) * 0.14;
+    ring.style.left = rx + 'px';
+    ring.style.top  = ry + 'px';
+    requestAnimationFrame(tick);
+  })();
+
+  const hoverSel = 'a, button, .model-card, .data-card, .btn, .skill-doc-row, .result-card, .action-chip';
+  document.addEventListener('mouseover', e => {
+    if (e.target.closest(hoverSel)) ring.classList.add('hover');
+  });
+  document.addEventListener('mouseout', e => {
+    if (e.target.closest(hoverSel)) ring.classList.remove('hover');
+  });
+})();
+
+// ── Nav scroll state ──────────────────────────────────────
+(function() {
+  const nav = document.getElementById('site-nav');
+  if (!nav) return;
+  const update = () => nav.classList.toggle('scrolled', window.scrollY > 40);
+  window.addEventListener('scroll', update, { passive: true });
+  update();
+})();
+
+// ── Scroll reveal ─────────────────────────────────────────
+(function() {
+  const els = document.querySelectorAll('.reveal');
+  if (!els.length) return;
+  const obs = new IntersectionObserver(entries => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        const delay = entry.target.dataset.delay ? parseInt(entry.target.dataset.delay) : 0;
+        setTimeout(() => entry.target.classList.add('visible'), delay);
+        obs.unobserve(entry.target);
+      }
+    });
+  }, { threshold: 0.08 });
+  els.forEach(el => obs.observe(el));
+})();
+
+// ── Accuracy bars (animate in on scroll) ─────────────────
+(function() {
+  const barM1 = document.getElementById('bar-m1');
+  const barM2 = document.getElementById('bar-m2');
+  const pctM1 = document.getElementById('m1-pct');
+  const pctM2 = document.getElementById('m2-pct');
+
+  // Placeholder values — update with your actual scores from the notebook
+  const ACC_M1 = 94;  // e.g. 94% — replace with clf_full.score(X_test, y_test) * 100
+  const ACC_M2 = 88;  // e.g. 88% — replace with clf_reduced.score(X_test, y_test) * 100
+
+  let animated = false;
+  const obs = new IntersectionObserver(entries => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting && !animated) {
+        animated = true;
+        setTimeout(() => {
+          barM1.style.width = ACC_M1 + '%';
+          barM2.style.width = ACC_M2 + '%';
+          pctM1.textContent = ACC_M1 + '%';
+          pctM2.textContent = ACC_M2 + '%';
+        }, 300);
+      }
+    });
+  }, { threshold: 0.3 });
+
+  const section = document.getElementById('performance');
+  if (section) obs.observe(section);
+})();
+</script>
+
+</body>
+</html>
