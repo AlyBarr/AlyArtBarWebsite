@@ -124,8 +124,8 @@ const RND_ENTRIES = [
     hypothesis: "A Random Forest pipeline with hand-crafted skeletal features could reliably classify 18 motion actions from 3D joint data without deep learning, keeping the system interpretable and deployable in any DCC tool.",
     finding: "Both models ship. M1 (full feature) maximises accuracy; M2 (PCA-reduced) trades a small margin for faster inference. Feature importances and PCA scatter plots confirm the models learn meaningful motion-space structure.",
     artifacts: [
-      { label: "GitHub", url: "#" },
-      { label: "Docs",   url: "ml-rig-predictor.html" }
+      { label: "GitHub", url: "https://github.com/AlyBarr/VirtualProdMLPredict"},
+        { label: "Docs",   url: "MLrigPredictor.html"}
     ]
   }, 
   
