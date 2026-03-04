@@ -1,0 +1,1254 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="AOI XR — Augmented Object Intelligence with XR Objects. Capstone project by Alyssa Barrientos." />
+  <title>AOI XR · AlyArtBar</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,600;0,700;1,300&family=Fira+Code:wght@400;500&family=DM+Sans:ital,wght@0,300;0,400;1,300&display=swap" rel="stylesheet" />
+
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; }
+img, svg { display: block; max-width: 100%; }
+
+:root {
+  --c-void:    #020810;
+  --c-abyss:   #060f1e;
+  --c-trench:  #0b1f36;
+  --c-depth:   #0f3050;
+  --c-current: #1a5c72;
+  --c-thermal: #1f8a7a;
+  --c-biolume: #3dffd0;
+  --c-seafoam: #7eeedd;
+  --c-nebula:  #a78bfa;
+  --c-star:    #e8f4f8;
+  --c-mist:    #8ab0c4;
+  --c-ghost:   #3d5a6a;
+  --c-amber:   #f0a050;
+  --c-rose:    #f06a8a;
+
+  --font-display: 'Cormorant Garamond', Georgia, serif;
+  --font-mono:    'Fira Code', 'Courier New', monospace;
+  --font-body:    'DM Sans', system-ui, sans-serif;
+
+  --text-display: clamp(1.8rem, 4vw, 3rem);
+  --text-body:    clamp(0.88rem, 1vw, 1rem);
+  --text-label:   0.7rem;
+  --text-micro:   0.62rem;
+
+  --space-xs: 0.5rem;
+  --space-sm: 1rem;
+  --space-md: 2rem;
+  --space-lg: 4rem;
+  --space-xl: 7rem;
+
+  --radius-sm: 3px;
+  --radius-md: 6px;
+  --ease-out:  cubic-bezier(0.16, 1, 0.3, 1);
+  --dur-micro: 180ms;
+  --dur-ui:    350ms;
+  --dur-reveal: 700ms;
+}
+
+body {
+  background: var(--c-void);
+  color: var(--c-star);
+  font-family: var(--font-body);
+  font-weight: 300;
+  font-size: var(--text-body);
+  line-height: 1.75;
+  overflow-x: hidden;
+  cursor: none;
+}
+
+.grain {
+  position: fixed; inset: 0; z-index: 1; pointer-events: none;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  background-size: 200px 200px; opacity: 0.032; mix-blend-mode: overlay;
+}
+#stars { position: fixed; inset: 0; z-index: 0; pointer-events: none; }
+
+#cursor-ring, #cursor-dot {
+  position: fixed; z-index: 9999;
+  border-radius: 50%;
+  pointer-events: none;
+  transform: translate(-50%, -50%);
+  transition: width var(--dur-micro), height var(--dur-micro);
+}
+#cursor-ring { width: 28px; height: 28px; border: 1px solid rgba(61,255,208,0.4); }
+#cursor-dot  { width: 6px; height: 6px; background: var(--c-biolume); box-shadow: 0 0 8px rgba(61,255,208,0.6); }
+#cursor-ring.hover { width: 44px; height: 44px; border-color: rgba(61,255,208,0.6); }
+
+::-webkit-scrollbar { width: 4px; }
+::-webkit-scrollbar-track { background: var(--c-abyss); }
+::-webkit-scrollbar-thumb { background: var(--c-depth); border-radius: 2px; }
+::selection { background: rgba(61,255,208,0.2); color: var(--c-biolume); }
+
+/* ── NAV ── */
+#site-nav {
+  position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+  padding: 1.2rem 3rem;
+  transition: background var(--dur-ui), backdrop-filter var(--dur-ui);
+}
+#site-nav.scrolled { background: rgba(2,8,16,0.88); backdrop-filter: blur(12px); border-bottom: 1px solid var(--c-depth); }
+.nav-inner { display: flex; align-items: center; justify-content: space-between; max-width: 1200px; margin: 0 auto; }
+.nav-brand { display: flex; align-items: baseline; gap: 0.6rem; text-decoration: none; }
+.brand-initials { font-family: var(--font-display); font-size: 1.4rem; font-weight: 700; color: var(--c-biolume); line-height: 1; }
+.brand-name { font-family: var(--font-mono); font-size: var(--text-label); letter-spacing: 0.25em; color: var(--c-mist); text-transform: uppercase; }
+.nav-links { display: flex; align-items: center; gap: 2.5rem; list-style: none; }
+.nav-links a {
+  font-family: var(--font-mono); font-size: var(--text-label);
+  letter-spacing: 0.15em; text-transform: uppercase; color: var(--c-mist);
+  text-decoration: none; position: relative; transition: color var(--dur-micro); padding-bottom: 2px;
+}
+.nav-links a::after {
+  content: ''; position: absolute; bottom: -2px; left: 0; right: 0; height: 1px;
+  background: var(--c-biolume); transform: scaleX(0); transform-origin: left;
+  transition: transform var(--dur-ui) var(--ease-out);
+}
+.nav-links a:hover { color: var(--c-seafoam); }
+.nav-links a:hover::after { transform: scaleX(1); }
+.nav-back {
+  display: flex; align-items: center; gap: 0.5rem;
+  font-family: var(--font-mono); font-size: var(--text-label);
+  letter-spacing: 0.15em; text-transform: uppercase;
+  color: var(--c-ghost); text-decoration: none; transition: color var(--dur-micro);
+}
+.nav-back:hover { color: var(--c-biolume); }
+.nav-back::before { content: '←'; }
+
+/* ── LAYOUT ── */
+main { position: relative; z-index: 2; max-width: 1200px; margin: 0 auto; padding: 0 3rem; }
+.container { max-width: 900px; }
+.section { padding: var(--space-xl) 0; }
+
+.zone-div {
+  position: relative; height: 1px;
+  background: linear-gradient(to right, transparent, var(--c-depth), transparent);
+  z-index: 2;
+}
+.zone-div::after {
+  content: attr(data-depth); position: absolute; right: 0; top: 50%; transform: translateY(-50%);
+  font-family: var(--font-mono); font-size: var(--text-micro); letter-spacing: 0.2em;
+  color: var(--c-ghost); background: var(--c-void); padding-left: 1rem; text-transform: uppercase;
+}
+
+.reveal {
+  opacity: 0; clip-path: inset(0 0 30px 0);
+  transition: opacity var(--dur-reveal) var(--ease-out), clip-path var(--dur-reveal) var(--ease-out);
+}
+.reveal.visible { opacity: 1; clip-path: inset(0 0 0 0); }
+
+.eyebrow { font-family: var(--font-mono); font-size: var(--text-label); letter-spacing: 0.25em; text-transform: uppercase; color: var(--c-biolume); margin-bottom: var(--space-xs); }
+.section-title { font-family: var(--font-display); font-size: var(--text-display); font-weight: 600; color: var(--c-star); line-height: 1.15; margin-bottom: var(--space-sm); }
+.section-rule { width: 60px; height: 1px; background: linear-gradient(to right, var(--c-biolume), transparent); margin-bottom: var(--space-md); }
+
+code { font-family: var(--font-mono); font-size: 0.82rem; background: var(--c-trench); border: 1px solid var(--c-depth); border-radius: 3px; padding: 0.1em 0.4em; color: var(--c-seafoam); }
+
+.tool-tag {
+  font-family: var(--font-mono); font-size: var(--text-micro); letter-spacing: 0.1em; text-transform: uppercase;
+  color: var(--c-ghost); border: 1px solid var(--c-depth); border-radius: var(--radius-sm);
+  padding: 0.2rem 0.6rem; white-space: nowrap; transition: border-color var(--dur-micro), color var(--dur-micro);
+}
+.tool-tag:hover { border-color: var(--c-current); color: var(--c-mist); }
+
+.btn {
+  display: inline-flex; align-items: center; justify-content: center;
+  padding: 0.75rem 2rem; font-family: var(--font-mono); font-size: var(--text-label);
+  letter-spacing: 0.15em; text-transform: uppercase; text-decoration: none;
+  border-radius: var(--radius-sm); transition: all var(--dur-ui) var(--ease-out); cursor: none; border: none;
+}
+.btn-primary { background: linear-gradient(135deg, var(--c-current), var(--c-thermal)); color: var(--c-void); box-shadow: 0 0 20px rgba(31,138,122,0.25); }
+.btn-primary:hover { box-shadow: 0 0 30px rgba(61,255,208,0.35); transform: translateY(-2px); }
+.btn-ghost { background: transparent; color: var(--c-seafoam); border: 1px solid var(--c-depth); }
+.btn-ghost:hover { border-color: var(--c-biolume); color: var(--c-biolume); box-shadow: 0 0 16px rgba(61,255,208,0.12); transform: translateY(-2px); }
+
+/* ── HERO ── */
+.project-hero { padding: 10rem 0 var(--space-lg); position: relative; }
+.project-hero .orb { position: absolute; border-radius: 50%; filter: blur(80px); pointer-events: none; opacity: 0.12; }
+.project-hero .orb-1 { width: 500px; height: 300px; background: radial-gradient(ellipse, var(--c-thermal), transparent 70%); top: 60px; left: -100px; animation: orb-drift 18s ease-in-out infinite alternate; }
+.project-hero .orb-2 { width: 300px; height: 300px; background: radial-gradient(ellipse, var(--c-nebula), transparent 70%); top: 0; right: -80px; opacity: 0.06; animation: orb-drift 24s ease-in-out infinite alternate-reverse; }
+@keyframes orb-drift { from { transform: translateY(0) translateX(0); } to { transform: translateY(30px) translateX(20px); } }
+@keyframes pulse { 0%, 100% { box-shadow: 0 0 0 0 rgba(61,255,208,0.5); } 50% { box-shadow: 0 0 0 5px rgba(61,255,208,0); } }
+
+.project-hero-meta { display: flex; align-items: center; gap: 1rem; margin-bottom: var(--space-sm); flex-wrap: wrap; }
+.project-category { font-family: var(--font-mono); font-size: var(--text-micro); letter-spacing: 0.2em; text-transform: uppercase; color: var(--c-ghost); }
+.project-category::before { content: '// '; color: var(--c-current); }
+.meta-sep { color: var(--c-ghost); font-family: var(--font-mono); font-size: var(--text-micro); }
+
+.project-hero-title { font-family: var(--font-display); font-size: clamp(2.8rem, 7vw, 6rem); font-weight: 700; line-height: 1.05; letter-spacing: -0.01em; color: var(--c-star); margin-bottom: var(--space-sm); }
+.project-hero-title span { color: var(--c-biolume); }
+.project-hero-oneliner { font-weight: 300; font-size: clamp(1rem, 1.5vw, 1.2rem); color: var(--c-mist); max-width: 640px; line-height: 1.7; margin-bottom: var(--space-md); }
+.project-hero-tools { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-bottom: var(--space-md); }
+.project-hero-links { display: flex; align-items: center; gap: 1.2rem; flex-wrap: wrap; }
+
+.stat-row { display: grid; grid-template-columns: repeat(5, 1fr); border: 1px solid var(--c-depth); border-radius: var(--radius-md); overflow: hidden; margin-top: var(--space-lg); }
+.stat-cell { padding: 1.4rem 1rem; text-align: center; border-right: 1px solid var(--c-depth); background: var(--c-abyss); transition: background var(--dur-ui); }
+.stat-cell:last-child { border-right: none; }
+.stat-cell:hover { background: var(--c-trench); }
+.stat-num { font-family: var(--font-display); font-size: 2.2rem; font-weight: 700; color: var(--c-biolume); line-height: 1; margin-bottom: 0.3rem; }
+.stat-label { font-family: var(--font-mono); font-size: var(--text-micro); letter-spacing: 0.15em; text-transform: uppercase; color: var(--c-ghost); }
+
+/* ── GOAL CARDS ── */
+.goal-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--space-sm); margin-top: var(--space-md); }
+.goal-card {
+  background: var(--c-abyss); border: 1px solid var(--c-depth); border-radius: var(--radius-md);
+  padding: 1.5rem; position: relative; overflow: hidden;
+  transition: border-color var(--dur-ui), transform var(--dur-ui);
+}
+.goal-card:hover { border-color: var(--c-current); transform: translateY(-2px); }
+.goal-card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 1.5px; background: linear-gradient(to right, transparent, var(--c-biolume), transparent); opacity: 0; transition: opacity var(--dur-ui); }
+.goal-card:hover::before { opacity: 1; }
+.goal-card.g-purple::before { background: linear-gradient(to right, transparent, var(--c-nebula), transparent); }
+.goal-card.g-amber::before  { background: linear-gradient(to right, transparent, var(--c-amber),  transparent); }
+.goal-icon  { font-size: 1.4rem; margin-bottom: 0.75rem; display: block; }
+.goal-title { font-family: var(--font-display); font-size: 1.15rem; font-weight: 600; color: var(--c-star); margin-bottom: 0.5rem; }
+.goal-card p { color: var(--c-mist); font-size: 0.84rem; line-height: 1.65; }
+
+/* ── USE CASE BANDS ── */
+.usecase-row { display: grid; grid-template-columns: 140px 1fr; gap: 1.5rem; padding: 1.25rem 0; border-bottom: 1px solid rgba(15,48,80,0.6); align-items: start; }
+.usecase-row:first-child { border-top: 1px solid rgba(15,48,80,0.6); }
+.usecase-row:last-child { border-bottom: none; }
+.usecase-domain { font-family: var(--font-display); font-size: 1rem; font-weight: 600; color: var(--c-star); }
+.usecase-desc { color: var(--c-mist); font-size: 0.88rem; line-height: 1.65; }
+
+/* ── PIPELINE STAGES ── */
+.pipeline-stages { display: flex; align-items: stretch; gap: 0; margin-top: var(--space-md); border: 1px solid var(--c-depth); border-radius: var(--radius-md); overflow: hidden; }
+.pipe-stage {
+  flex: 1; padding: 1.5rem 1rem; background: var(--c-abyss);
+  border-right: 1px solid var(--c-depth); text-align: center;
+  transition: background var(--dur-ui); position: relative;
+}
+.pipe-stage:last-child { border-right: none; }
+.pipe-stage:hover { background: var(--c-trench); }
+.pipe-stage.mine { background: rgba(61,255,208,0.04); border-top: 2px solid var(--c-biolume); }
+.pipe-stage.mine:hover { background: rgba(61,255,208,0.07); }
+.pipe-num { font-family: var(--font-mono); font-size: var(--text-micro); color: var(--c-ghost); letter-spacing: 0.15em; margin-bottom: 0.5rem; display: block; }
+.pipe-icon { font-size: 1.3rem; margin-bottom: 0.5rem; display: block; }
+.pipe-name { font-family: var(--font-display); font-size: 1rem; font-weight: 600; color: var(--c-star); margin-bottom: 0.3rem; }
+.pipe-sub  { font-family: var(--font-mono); font-size: var(--text-micro); color: var(--c-ghost); line-height: 1.5; }
+.pipe-mine-tag { font-family: var(--font-mono); font-size: 0.58rem; color: var(--c-biolume); letter-spacing: 0.1em; margin-top: 0.4rem; display: block; }
+
+/* ── OVERVIEW CARDS ── */
+.overview-grid { display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-md); margin-top: var(--space-md); }
+.tool-doc-card {
+  background: var(--c-abyss); border: 1px solid var(--c-depth); border-radius: var(--radius-md);
+  padding: var(--space-md); position: relative; overflow: hidden;
+  transition: border-color var(--dur-ui), transform var(--dur-ui), box-shadow var(--dur-ui); cursor: none;
+}
+.tool-doc-card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 1.5px; opacity: 0; transition: opacity var(--dur-ui); }
+.tool-doc-card.c-teal::before    { background: linear-gradient(to right, transparent, var(--c-biolume), transparent); }
+.tool-doc-card.c-purple::before  { background: linear-gradient(to right, transparent, var(--c-nebula),  transparent); }
+.tool-doc-card.c-amber::before   { background: linear-gradient(to right, transparent, var(--c-amber),   transparent); }
+.tool-doc-card.c-thermal::before { background: linear-gradient(to right, transparent, var(--c-thermal), transparent); }
+.tool-doc-card:hover { border-color: var(--c-current); transform: translateY(-3px); box-shadow: 0 8px 32px rgba(15,48,80,0.5); }
+.tool-doc-card:hover::before { opacity: 1; }
+.card-glyph { font-size: 1.4rem; margin-bottom: 0.8rem; display: block; }
+.card-title { font-family: var(--font-display); font-size: 1.3rem; font-weight: 600; color: var(--c-star); margin-bottom: 0.2rem; }
+.card-sub   { font-family: var(--font-mono); font-size: var(--text-micro); letter-spacing: 0.1em; color: var(--c-ghost); margin-bottom: 0.9rem; }
+.tool-doc-card p { color: var(--c-mist); font-size: 0.88rem; margin-bottom: 1.1rem; line-height: 1.7; }
+.feature-list { list-style: none; display: flex; flex-direction: column; gap: 0.45rem; }
+.feature-list li { font-family: var(--font-mono); font-size: var(--text-micro); letter-spacing: 0.04em; color: var(--c-mist); display: flex; gap: 0.6rem; align-items: flex-start; }
+.feature-list li::before { content: '→'; color: var(--c-current); flex-shrink: 0; }
+.tool-doc-card.c-purple .feature-list li::before  { color: var(--c-nebula); }
+.tool-doc-card.c-amber  .feature-list li::before  { color: var(--c-amber); }
+.tool-doc-card.c-thermal .feature-list li::before { color: var(--c-thermal); }
+
+/* ── ARCH RATIONALE ── */
+.skills-doc-list { display: flex; flex-direction: column; margin-top: var(--space-md); }
+.skill-doc-row {
+  display: grid; grid-template-columns: 210px 1fr; gap: var(--space-md);
+  padding: 1.5rem 0; border-bottom: 1px solid var(--c-depth);
+  transition: background var(--dur-ui); align-items: start;
+}
+.skill-doc-row:first-child { border-top: 1px solid var(--c-depth); }
+.skill-doc-row:hover { background: rgba(11,31,54,0.4); margin: 0 -1.5rem; padding-left: 1.5rem; padding-right: 1.5rem; }
+.skill-name  { font-family: var(--font-display); font-size: 1.05rem; font-weight: 600; color: var(--c-star); }
+.skill-where { font-family: var(--font-mono); font-size: var(--text-micro); letter-spacing: 0.1em; color: var(--c-ghost); margin-top: 0.25rem; }
+.skill-desc  { color: var(--c-mist); font-size: 0.9rem; line-height: 1.7; }
+
+/* ── CONTRIBUTIONS TABLE ── */
+.check-table { width: 100%; border-collapse: collapse; margin-top: var(--space-md); }
+.check-table thead tr { border-bottom: 1px solid var(--c-depth); }
+.check-table th { font-family: var(--font-mono); font-size: var(--text-micro); letter-spacing: 0.18em; text-transform: uppercase; color: var(--c-ghost); padding: 0.7rem 1rem; text-align: left; font-weight: 400; }
+.check-table td { padding: 1rem; color: var(--c-mist); border-bottom: 1px solid rgba(15,48,80,0.5); font-size: 0.88rem; vertical-align: top; line-height: 1.65; }
+.check-table td:first-child { font-family: var(--font-display); font-weight: 600; font-size: 1rem; color: var(--c-star); white-space: nowrap; }
+.check-table tr { transition: background var(--dur-micro); }
+.check-table tr:hover td { background: rgba(11,31,54,0.4); }
+.check-table tr:last-child td { border-bottom: none; }
+
+.badge-teal   { color: var(--c-biolume); font-family: var(--font-mono); font-size: var(--text-micro); letter-spacing: 0.08em; }
+.badge-purple { color: var(--c-nebula);  font-family: var(--font-mono); font-size: var(--text-micro); letter-spacing: 0.08em; }
+.badge-amber  { color: var(--c-amber);   font-family: var(--font-mono); font-size: var(--text-micro); letter-spacing: 0.08em; }
+.badge-ghost  { color: var(--c-ghost);   font-family: var(--font-mono); font-size: var(--text-micro); }
+
+/* ── QA METHODOLOGY GRID ── */
+.qa-method-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1px; background: var(--c-depth); border: 1px solid var(--c-depth); border-radius: var(--radius-md); overflow: hidden; margin-top: var(--space-md); }
+.qa-method-cell { background: var(--c-abyss); padding: 1.25rem 1rem; transition: background var(--dur-ui); }
+.qa-method-cell:hover { background: var(--c-trench); }
+.qa-method-name { font-family: var(--font-display); font-size: 0.95rem; font-weight: 600; color: var(--c-star); margin-bottom: 0.35rem; }
+.qa-method-cell p { font-size: 0.78rem; color: var(--c-mist); line-height: 1.55; }
+
+/* ── QA TEST CASES ── */
+.tc-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 0.75rem; margin-top: var(--space-md); }
+.tc-card {
+  background: var(--c-abyss); border: 1px solid var(--c-depth); border-radius: var(--radius-sm);
+  padding: 1rem 1rem 0.85rem;
+  transition: border-color var(--dur-ui);
+}
+.tc-card:hover { border-color: var(--c-current); }
+.tc-id { font-family: var(--font-mono); font-size: var(--text-micro); color: var(--c-ghost); letter-spacing: 0.12em; margin-bottom: 0.3rem; display: flex; align-items: center; justify-content: space-between; }
+.tc-name { font-size: 0.82rem; color: var(--c-star); font-weight: 400; margin-bottom: 0.35rem; }
+.tc-cat { font-family: var(--font-mono); font-size: 0.58rem; letter-spacing: 0.08em; text-transform: uppercase; padding: 0.12rem 0.4rem; border-radius: 2px; }
+.tc-functional   { background: rgba(61,255,208,0.08);  color: var(--c-biolume); }
+.tc-integration  { background: rgba(167,139,250,0.08); color: var(--c-nebula); }
+.tc-performance  { background: rgba(240,160,80,0.08);  color: var(--c-amber); }
+.tc-security     { background: rgba(240,106,138,0.08); color: var(--c-rose); }
+.tc-access       { background: rgba(126,238,221,0.08); color: var(--c-seafoam); }
+
+/* ── CI PIPELINE VISUAL ── */
+.ci-flow { display: flex; align-items: center; gap: 0; margin-top: var(--space-md); overflow-x: auto; }
+.ci-step {
+  flex: 1; min-width: 100px; text-align: center; padding: 1.25rem 0.75rem;
+  background: var(--c-abyss); border-top: 1px solid var(--c-depth); border-bottom: 1px solid var(--c-depth);
+  position: relative; transition: background var(--dur-ui);
+}
+.ci-step:first-child { border-left: 1px solid var(--c-depth); border-radius: var(--radius-md) 0 0 var(--radius-md); }
+.ci-step:last-child  { border-right: 1px solid var(--c-depth); border-radius: 0 var(--radius-md) var(--radius-md) 0; }
+.ci-step:not(:first-child) { border-left: 1px solid var(--c-depth); }
+.ci-step.mine { background: rgba(61,255,208,0.05); border-top-color: var(--c-biolume); }
+.ci-step:hover { background: var(--c-trench); }
+.ci-arrow { font-family: var(--font-mono); font-size: 0.65rem; color: var(--c-ghost); padding: 0 0.25rem; flex-shrink: 0; align-self: center; }
+.ci-step-icon { font-size: 1.1rem; margin-bottom: 0.4rem; display: block; }
+.ci-step-name { font-family: var(--font-display); font-size: 0.9rem; font-weight: 600; color: var(--c-star); }
+.ci-step-sub  { font-family: var(--font-mono); font-size: 0.58rem; color: var(--c-ghost); margin-top: 0.2rem; line-height: 1.5; }
+.ci-mine-label { font-family: var(--font-mono); font-size: 0.55rem; color: var(--c-biolume); letter-spacing: 0.08em; margin-top: 0.35rem; display: block; }
+
+/* ── CI CHECKS TABLE ── */
+.ci-check-grid { display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-sm); margin-top: var(--space-md); }
+.ci-check-card { background: var(--c-abyss); border: 1px solid var(--c-depth); border-radius: var(--radius-md); padding: 1.4rem; }
+.ci-check-card.mine { border-color: rgba(61,255,208,0.2); }
+.ci-check-heading { font-family: var(--font-mono); font-size: var(--text-micro); letter-spacing: 0.15em; text-transform: uppercase; color: var(--c-ghost); margin-bottom: 0.85rem; }
+.ci-check-card.mine .ci-check-heading { color: var(--c-biolume); }
+.ci-check-list { list-style: none; display: flex; flex-direction: column; gap: 0.55rem; }
+.ci-check-list li { font-size: 0.84rem; color: var(--c-mist); display: flex; gap: 0.6rem; align-items: flex-start; line-height: 1.5; }
+.ci-check-list li::before { content: '✓'; color: var(--c-ghost); flex-shrink: 0; font-family: var(--font-mono); font-size: var(--text-micro); margin-top: 0.15rem; }
+.ci-check-card.mine .ci-check-list li::before { content: '✓'; color: var(--c-biolume); }
+
+/* ── ROLE BANNER ── */
+.role-banner { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1px; background: var(--c-depth); border: 1px solid var(--c-depth); border-radius: var(--radius-md); overflow: hidden; margin-bottom: var(--space-md); }
+.role-cell { background: var(--c-abyss); padding: 1.5rem 1.4rem; transition: background var(--dur-ui); }
+.role-cell:hover { background: var(--c-trench); }
+.role-cell-label { font-family: var(--font-mono); font-size: var(--text-micro); letter-spacing: 0.18em; text-transform: uppercase; color: var(--c-ghost); margin-bottom: 0.5rem; }
+.role-cell-title { font-family: var(--font-display); font-size: 1.2rem; font-weight: 600; color: var(--c-biolume); margin-bottom: 0.5rem; line-height: 1.2; }
+.role-cell p { color: var(--c-mist); font-size: 0.84rem; line-height: 1.65; }
+
+/* ── TEAM ── */
+.team-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--space-sm); margin-top: var(--space-md); }
+.team-card { background: var(--c-abyss); border: 1px solid var(--c-depth); border-radius: var(--radius-md); padding: 1.4rem; position: relative; overflow: hidden; }
+.team-card.me { border-color: rgba(61,255,208,0.25); }
+.team-card.me::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 1.5px; background: linear-gradient(to right, transparent, var(--c-biolume), transparent); }
+.team-name   { font-family: var(--font-display); font-size: 1.1rem; font-weight: 600; color: var(--c-star); margin-bottom: 0.2rem; }
+.team-sprint { font-family: var(--font-mono); font-size: var(--text-micro); color: var(--c-ghost); letter-spacing: 0.1em; margin-bottom: 0.7rem; }
+.team-card ul { list-style: none; display: flex; flex-direction: column; gap: 0.35rem; }
+.team-card ul li { font-size: 0.82rem; color: var(--c-mist); display: flex; gap: 0.5rem; }
+.team-card ul li::before { content: '→'; color: var(--c-ghost); flex-shrink: 0; }
+.team-card.me ul li::before { color: var(--c-current); }
+
+/* ── FUTURE ── */
+.future-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--space-sm); margin-top: var(--space-md); }
+.future-card { background: var(--c-abyss); border: 1px solid var(--c-depth); border-radius: var(--radius-md); padding: 1.4rem; transition: border-color var(--dur-ui); }
+.future-card:hover { border-color: var(--c-current); }
+.future-num   { font-family: var(--font-mono); font-size: var(--text-micro); color: var(--c-ghost); letter-spacing: 0.15em; margin-bottom: 0.6rem; display: block; }
+.future-title { font-family: var(--font-display); font-size: 1.1rem; font-weight: 600; color: var(--c-star); margin-bottom: 0.5rem; }
+.future-card p { color: var(--c-mist); font-size: 0.84rem; line-height: 1.65; }
+
+/* ── FOOTER ── */
+.site-footer { position: relative; z-index: 2; padding: 2rem 3rem; border-top: 1px solid var(--c-depth); text-align: center; margin-top: var(--space-xl); }
+.footer-text { font-family: var(--font-mono); font-size: var(--text-micro); letter-spacing: 0.2em; color: var(--c-ghost); text-transform: lowercase; }
+.footer-accent { color: var(--c-current); }
+
+/* ── RESPONSIVE ── */
+@media (max-width: 1000px) {
+  .stat-row { grid-template-columns: repeat(3, 1fr); }
+  .qa-method-grid { grid-template-columns: repeat(2, 1fr); }
+  .future-grid { grid-template-columns: repeat(2, 1fr); }
+}
+@media (max-width: 900px) {
+  main { padding: 0 1.5rem; }
+  #site-nav { padding: 1rem 1.5rem; }
+  .overview-grid, .team-grid, .goal-grid { grid-template-columns: 1fr; }
+  .role-banner { grid-template-columns: 1fr; }
+  .skill-doc-row { grid-template-columns: 150px 1fr; }
+  .ci-check-grid { grid-template-columns: 1fr; }
+}
+@media (max-width: 600px) {
+  .stat-row { grid-template-columns: 1fr 1fr; }
+  .stat-cell { padding: 1rem 0.75rem; }
+  .skill-doc-row { grid-template-columns: 1fr; gap: 0.3rem; }
+  .future-grid, .qa-method-grid { grid-template-columns: 1fr; }
+  body { cursor: auto; }
+  #cursor-ring, #cursor-dot { display: none; }
+  .nav-links { display: none; }
+}
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
+  .reveal { opacity: 1; clip-path: none; }
+}
+</style>
+</head>
+<body>
+
+<div class="grain" aria-hidden="true"></div>
+<canvas id="stars" aria-hidden="true"></canvas>
+<div id="cursor-ring" aria-hidden="true"></div>
+<div id="cursor-dot"  aria-hidden="true"></div>
+
+<header id="site-nav">
+  <nav class="nav-inner" aria-label="Primary navigation">
+    <a class="nav-brand" href="index.html" aria-label="Back to AlyArtBar home">
+      <span class="brand-initials">AB</span>
+      <span class="brand-name">AlyArtBar</span>
+    </a>
+    <ul class="nav-links" role="list">
+      <li><a href="index.html#projects">Projects</a></li>
+      <li><a href="index.html#rnd">R&amp;D</a></li>
+      <li><a href="index.html#contact">Contact</a></li>
+      <li><a href="assets/resume.pdf" target="_blank" rel="noopener">Resume ↗</a></li>
+    </ul>
+    <a class="nav-back" href="index.html#projects">Back to Projects</a>
+  </nav>
+</header>
+
+<main>
+
+  <!-- ══════════ HERO ══════════ -->
+  <section class="project-hero">
+    <div class="orb orb-1" aria-hidden="true"></div>
+    <div class="orb orb-2" aria-hidden="true"></div>
+
+    <div class="project-hero-meta reveal">
+      <span class="project-category">capstone · CPSC 490/491</span>
+      <span class="meta-sep">·</span>
+      <span class="project-category">unity · ar foundation · llm</span>
+      <span class="meta-sep">·</span>
+      <span style="font-family:var(--font-mono);font-size:var(--text-micro);letter-spacing:0.2em;text-transform:uppercase;color:var(--c-biolume);">
+        <span style="display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--c-biolume);vertical-align:middle;margin-right:0.5rem;animation:pulse 2.5s ease-in-out infinite;"></span>
+        4 Sprints · 5 Contributors
+      </span>
+    </div>
+
+    <h1 class="project-hero-title reveal" style="animation-delay:0.1s">
+      Augmented Object<br><span>Intelligence XR</span>
+    </h1>
+
+    <p class="project-hero-oneliner reveal" style="animation-delay:0.18s">
+      A mobile AR capstone that makes everyday objects intelligent — point your camera at anything
+      and AI-generated context appears anchored to it in 3D space. Built on Google's XR-Objects
+      research, extended into a functional prototype across four sprints. My role was integration
+      engineering and QA: the work that kept the Unity project building, the team unblocked, and
+      every feature tested before it shipped.
+    </p>
+
+    <div class="project-hero-tools reveal" style="animation-delay:0.24s">
+      <span class="tool-tag">Unity 2022.3</span>
+      <span class="tool-tag">C# / URP</span>
+      <span class="tool-tag">AR Foundation</span>
+      <span class="tool-tag">ARKit</span>
+      <span class="tool-tag">ARCore</span>
+      <span class="tool-tag">MediaPipe</span>
+      <span class="tool-tag">LLM API (REST)</span>
+      <span class="tool-tag">GitHub Actions</span>
+      <span class="tool-tag">Xcode / iOS</span>
+      <span class="tool-tag">Meta Quest 3</span>
+    </div>
+
+    <div class="project-hero-links reveal" style="animation-delay:0.3s">
+      <a href="https://github.com/bautista-aa/Augmented-Object-Intelligence-with-XR-Objects" class="btn btn-primary" target="_blank" rel="noopener">View on GitHub ↗</a>
+      <a href="#my-role" class="btn btn-ghost">My Role ↓</a>
+    </div>
+
+    <div class="stat-row reveal" style="animation-delay:0.38s">
+      <div class="stat-cell"><div class="stat-num">4</div><div class="stat-label">Sprints</div></div>
+      <div class="stat-cell"><div class="stat-num">5</div><div class="stat-label">Contributors</div></div>
+      <div class="stat-cell"><div class="stat-num">31</div><div class="stat-label">Test Cases</div></div>
+      <div class="stat-cell"><div class="stat-num">10+</div><div class="stat-label">Bugs Fixed</div></div>
+      <div class="stat-cell"><div class="stat-num">100%</div><div class="stat-label">CI Pass Rate</div></div>
+    </div>
+  </section>
+
+  <div class="zone-div" data-depth="// 01 the goal"></div>
+
+  <!-- ══════════ THE GOAL ══════════ -->
+  <section class="section">
+    <div class="container">
+      <div class="reveal">
+        <p class="eyebrow">// 01 — The Goal</p>
+        <h2 class="section-title">Making objects<br>intelligent.</h2>
+        <div class="section-rule" aria-hidden="true"></div>
+        <p style="color:var(--c-mist);max-width:680px;margin-bottom:1.5rem;font-size:1rem;line-height:1.8;">
+          The core idea behind this project is simple: <em style="color:var(--c-star);font-style:normal;">what if you could point your phone at anything and the world explained itself back to you?</em>
+          Most AR experiences today overlay fixed, pre-authored content — a label, a logo, a marker.
+          AOI XR takes a different approach. Instead of pre-authored responses, it uses a live LLM to generate
+          context-aware answers the moment an object is detected. The overlay isn't static — it's a real
+          AI response, tailored to that specific object, in that moment.
+        </p>
+        <p style="color:var(--c-mist);max-width:680px;margin-bottom:var(--space-md);font-size:1rem;line-height:1.8;">
+          This project extends Google's published XR-Objects research, which demonstrated the concept but
+          stopped short of a mobile-deployable prototype. Our goal was to close that gap — to build something
+          that actually runs on an iPhone or Android device, is accessible to everyday users, and can serve
+          real-world needs across education, healthcare, retail, and beyond. The Sprint 4 scavenger hunt
+          demo is a concrete proof of that: a fully playable, LLM-driven AR experience running on a
+          physical device.
+        </p>
+      </div>
+
+      <div class="goal-grid">
+        <div class="goal-card reveal">
+          <span class="goal-icon">🎯</span>
+          <h3 class="goal-title">Democratize intelligent AR</h3>
+          <p>XR-Objects existed as a research demo. We wanted to make it real — running on an ordinary smartphone, not a research rig. No special hardware, no pre-authored content, just point and learn.</p>
+        </div>
+        <div class="goal-card g-purple reveal" data-delay="60">
+          <span class="goal-icon">♿</span>
+          <h3 class="goal-title">Accessibility first</h3>
+          <p>A strong emphasis on inclusive design: colorblind-safe confidence palettes, support for visually impaired and neurodiverse users, and gesture/voice as alternative input methods alongside tap.</p>
+        </div>
+        <div class="goal-card g-amber reveal" data-delay="120">
+          <span class="goal-icon">🔁</span>
+          <h3 class="goal-title">Real-world applicability</h3>
+          <p>Not a toy — a foundation for practical use. A student sees an unfamiliar lab instrument and asks what it does. A nurse checks a medication bottle. A warehouse worker identifies a part. The LLM adapts to each context.</p>
+        </div>
+      </div>
+
+      <!-- Use cases -->
+      <div style="margin-top:var(--space-lg);">
+        <h3 class="reveal" style="font-family:var(--font-display);font-size:1.4rem;font-weight:600;color:var(--c-star);margin-bottom:var(--space-sm);">Designed for real domains</h3>
+        <div class="reveal" data-delay="40">
+          <div class="usecase-row">
+            <div class="usecase-domain">Education</div>
+            <div class="usecase-desc">Students can point at lab equipment, historical artifacts, or biological specimens and receive instant contextual explanations. The LLM can be prompted to match the user's level — elementary to graduate school. Removes the barrier of needing a teacher present at every moment of discovery.</div>
+          </div>
+          <div class="usecase-row">
+            <div class="usecase-domain">Healthcare</div>
+            <div class="usecase-desc">Nurses and technicians can scan medication bottles, medical devices, or anatomical models for dosage info, usage warnings, or procedural reminders — reducing the cognitive load of high-stakes environments where referencing a manual takes precious time.</div>
+          </div>
+          <div class="usecase-row">
+            <div class="usecase-domain">Retail &amp; Industry</div>
+            <div class="usecase-desc">Warehouse workers identify unfamiliar parts. Retail staff pull product specs or inventory status by pointing at items. Field technicians get step-by-step guidance anchored directly to the machinery they're working on, without pulling out a manual or calling for help.</div>
+          </div>
+          <div class="usecase-row">
+            <div class="usecase-domain">Accessibility</div>
+            <div class="usecase-desc">For users with visual impairments, the detected label can be read aloud via text-to-speech. Haptic feedback on detection events creates a non-visual signal. The system's architecture specifically supports adaptive content delivery based on user profile and environmental context.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <div class="zone-div" data-depth="// 02 how it works"></div>
+
+  <!-- ══════════ HOW IT WORKS ══════════ -->
+  <section class="section">
+    <div class="container">
+      <div class="reveal">
+        <p class="eyebrow">// 02 — How It Works</p>
+        <h2 class="section-title">Four stages.<br>Real time.</h2>
+        <div class="section-rule" aria-hidden="true"></div>
+        <p style="color:var(--c-mist);max-width:660px;margin-bottom:var(--space-md);">
+          Every time the camera detects an object, four stages run in sequence — from raw camera frame to a
+          3D text anchor appearing in the user's physical environment. Each stage is a deliberate
+          architectural choice balancing latency, accuracy, and device constraints.
+        </p>
+      </div>
+
+      <!-- Pipeline visual -->
+      <div class="ci-flow reveal">
+        <div class="ci-step">
+          <span class="ci-step-icon">📷</span>
+          <div class="ci-step-name">Capture</div>
+          <div class="ci-step-sub">AR Camera + AR Session<br>frames &amp; spatial data</div>
+        </div>
+        <div class="ci-arrow">→</div>
+        <div class="ci-step">
+          <span class="ci-step-icon">🧠</span>
+          <div class="ci-step-name">Detect</div>
+          <div class="ci-step-sub">MediaPipe on-device<br>object + hand tracking</div>
+        </div>
+        <div class="ci-arrow">→</div>
+        <div class="ci-step">
+          <span class="ci-step-icon">💬</span>
+          <div class="ci-step-name">Query</div>
+          <div class="ci-step-sub">AOI Integration Manager<br>→ LLM REST API</div>
+        </div>
+        <div class="ci-arrow">→</div>
+        <div class="ci-step">
+          <span class="ci-step-icon">⚓</span>
+          <div class="ci-step-name">Anchor</div>
+          <div class="ci-step-sub">AR Foundation places<br>world-space canvas</div>
+        </div>
+        <div class="ci-arrow">→</div>
+        <div class="ci-step">
+          <span class="ci-step-icon">👁</span>
+          <div class="ci-step-name">Display</div>
+          <div class="ci-step-sub">Billboard label locked<br>to physical object</div>
+        </div>
+      </div>
+
+      <div class="overview-grid" style="margin-top:var(--space-md);">
+        <div class="tool-doc-card c-teal reveal">
+          <span class="card-glyph">📷</span>
+          <h3 class="card-title">Stage 1 — Detection</h3>
+          <p class="card-sub">AR Camera · XRCameraSubsystem · MediaPipe</p>
+          <p>AR Foundation's <code>XRCameraSubsystem</code> streams frames from the device camera while <code>XRSessionSubsystem</code> manages AR lifecycle. MediaPipe Unity Plugin runs a TensorFlow Lite object detection model on-device — no cloud vision call — and outputs detected object labels and bounding boxes each frame.</p>
+          <ul class="feature-list">
+            <li>≥5 FPS detection rate target</li>
+            <li>10+ concurrent detections supported</li>
+            <li>On-device ML — privacy preserved, no streaming</li>
+            <li>Hand tracking enabled for gesture input</li>
+          </ul>
+        </div>
+
+        <div class="tool-doc-card c-purple reveal" data-delay="80">
+          <span class="card-glyph">💬</span>
+          <h3 class="card-title">Stage 2 — LLM Query</h3>
+          <p class="card-sub">AOI Integration Manager · UnityWebRequest · REST LLM</p>
+          <p>The AOI Integration Manager receives the detection label, builds a structured natural-language prompt, and fires it to the LLM backend via <code>UnityWebRequest</code>. The backend — evaluated across Google PaLI, LLaMA, and OpenAI-compatible APIs — returns a contextual response. The manager routes that text to the anchor system. Target response time is under 100ms.</p>
+          <ul class="feature-list">
+            <li>&lt;100ms response time target</li>
+            <li>Swappable backend — endpoint and auth header only</li>
+            <li>API key secured via environment variables</li>
+            <li>Mock fallback for offline development and testing</li>
+          </ul>
+        </div>
+
+        <div class="tool-doc-card c-amber reveal" data-delay="120">
+          <span class="card-glyph">⚓</span>
+          <h3 class="card-title">Stage 3 — Spatial Anchoring</h3>
+          <p class="card-sub">AR Foundation · World-Space Canvas · UIAnchorManager</p>
+          <p>The <code>UIAnchorManager</code> creates a world-space Unity Canvas at the detected object's estimated 3D position. A billboard effect ensures it always rotates to face the camera. Object pooling recycles anchor components instead of instantiating and destroying them every frame, eliminating the GC pressure that would cause visible stutters during sustained detection sessions.</p>
+          <ul class="feature-list">
+            <li>Billboard effect — readable from any angle</li>
+            <li>Confidence-coded color with colorblind-safe palette</li>
+            <li>Object pool — zero GC allocations at runtime</li>
+            <li>Fade-in/out + pulse animation coroutines</li>
+          </ul>
+        </div>
+
+        <div class="tool-doc-card c-thermal reveal" data-delay="160">
+          <span class="card-glyph">🎮</span>
+          <h3 class="card-title">Sprint 4 — Scavenger Hunt</h3>
+          <p class="card-sub">LLM item gen · Tap-to-detect · AR Marker Spawner</p>
+          <p>The final sprint pivoted the detection pipeline into an AR scavenger hunt for the live class demo. The LLM generates a 5–10 item list appropriate to the physical environment (classroom, outdoor, etc.), a new <code>TapToDetectionFeeder</code> feeds taps into the detection pipeline, a <code>DetectorBridge</code> formats results for matching, and AR markers spawn on detected surfaces via raycasting. A full session lifecycle runs from main menu through gameplay to end screen.</p>
+          <ul class="feature-list">
+            <li>LLM generates context-appropriate item lists</li>
+            <li>Tap → detect → match → highlight → register</li>
+            <li>AR markers placed on detected planes via raycast</li>
+            <li>Session timer · ascending score · clean end state</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <div class="zone-div" data-depth="// 03 architecture"></div>
+
+  <!-- ══════════ ARCHITECTURE RATIONALE ══════════ -->
+  <section class="section">
+    <div class="container">
+      <div class="reveal">
+        <p class="eyebrow">// 03 — Architecture</p>
+        <h2 class="section-title">Why we built it<br>this way.</h2>
+        <div class="section-rule" aria-hidden="true"></div>
+        <p style="color:var(--c-mist);max-width:660px;margin-bottom:var(--space-md);">
+          Each technology decision was a deliberate trade-off. Understanding these choices is part of
+          understanding the project — not just what was built, but why.
+        </p>
+      </div>
+
+      <div class="skills-doc-list">
+        <div class="skill-doc-row reveal">
+          <div>
+            <div class="skill-name">Unity over native</div>
+            <div class="skill-where">ARKit / ARCore / OpenXR</div>
+          </div>
+          <div class="skill-desc">
+            Writing native Swift for iOS, Kotlin for Android, and a separate Quest build would have tripled the codebase for the same feature. Unity's AR Foundation abstraction lets a single C# codebase drive ARKit on iOS, ARCore on Android, and OpenXR on Meta Quest — switching providers by changing a build target, not rewriting subsystem logic. The trade-off is Unity's URP pipeline requires explicit configuration for AR camera transparency, which produced real bugs (yellow background, black screen) that had to be diagnosed and fixed during the project.
+          </div>
+        </div>
+
+        <div class="skill-doc-row reveal" data-delay="40">
+          <div>
+            <div class="skill-name">On-device detection</div>
+            <div class="skill-where">MediaPipe over cloud vision</div>
+          </div>
+          <div class="skill-desc">
+            Streaming camera frames to a cloud vision API introduces a network round-trip for every detection — unacceptable for AR where you need feedback within a frame or two. MediaPipe runs a TensorFlow Lite model directly on the device CPU/GPU, keeping detection latency well under the 5 FPS target with no network dependency and no privacy risk from transmitting camera data. The limitation is that on-device object detection models are less semantically rich than a full cloud model, which is why the LLM handles interpretation rather than the detector.
+          </div>
+        </div>
+
+        <div class="skill-doc-row reveal" data-delay="80">
+          <div>
+            <div class="skill-name">Split inference</div>
+            <div class="skill-where">Local detect + Cloud LLM</div>
+          </div>
+          <div class="skill-desc">
+            Modern multimodal LLMs are billions of parameters — far too large for mobile inference at reasonable speed. The solution is split inference: MediaPipe does the fast, cheap, on-device spatial grounding (what is this object and where is it in 3D space?), and a single lightweight REST call gives that label to a cloud LLM for semantic enrichment (what should I tell the user about this object?). This mirrors the architecture of the XR-Objects paper itself. The backend is intentionally backend-agnostic — swapping from PaLI to LLaMA to any OpenAI-compatible API requires only changing the endpoint URL and authentication header.
+          </div>
+        </div>
+
+        <div class="skill-doc-row reveal" data-delay="120">
+          <div>
+            <div class="skill-name">World-space anchors</div>
+            <div class="skill-where">over HUD / screen-space UI</div>
+          </div>
+          <div class="skill-desc">
+            A 2D HUD overlay loses its connection to the physical object the moment the user moves the camera — the label floats on screen while the object slides out of frame. World-space anchors are positioned in the 3D coordinate space that AR Foundation maintains relative to the real environment, so they stay associated with the physical object as the user walks around it. The billboard effect solves the readability problem: no matter what angle you view the anchor from, its text plane rotates to face you.
+          </div>
+        </div>
+
+        <div class="skill-doc-row reveal" data-delay="160">
+          <div>
+            <div class="skill-name">Feature branches + CI gates</div>
+            <div class="skill-where">over trunk-based development</div>
+          </div>
+          <div class="skill-desc">
+            Unity projects fail in ways that silent — a missing <code>.meta</code> file, a scene load order issue, or a misplaced serialized field can leave the project compiling but broken at runtime. Feature branch development with mandatory PR reviews caught several of these before they reached main. The CI pipeline adds automated checks specifically designed for Unity failure modes: meta file validation, null safety scanning, script compilation verification, and a smoke test that fails the build on any logged exception during scene initialization.
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <div class="zone-div" data-depth="// 04 my role"></div>
+
+  <!-- ══════════ MY ROLE ══════════ -->
+  <section id="my-role" class="section">
+    <div class="container">
+      <div class="reveal">
+        <p class="eyebrow">// 04 — My Role</p>
+        <h2 class="section-title">Integration engineer.<br>The glue of the project.</h2>
+        <div class="section-rule" aria-hidden="true"></div>
+        <p style="color:var(--c-mist);max-width:660px;margin-bottom:var(--space-md);">
+          My contribution was less about owning a single feature and more about owning
+          <em style="color:var(--c-star);font-style:normal;">reliability</em>.
+          When the Unity project entered Safe Mode in Sprint 4, I diagnosed and fixed the compilation
+          errors that blocked the entire team. When scene transitions broke after a merge, I rewired
+          the Build Settings and inspector references. When the AR camera rendered a yellow background
+          or black screen on an iOS build, I traced the URP clear flag configuration and fixed it.
+          Alongside that integration work, I ran QA across every sprint and contributed to
+          the CI/CD pipeline gates that prevented these issues from recurring.
+        </p>
+      </div>
+
+      <div class="role-banner reveal">
+        <div class="role-cell">
+          <div class="role-cell-label">Primary</div>
+          <div class="role-cell-title">Unity Integration &amp; Scene Engineer</div>
+          <p>AR rendering, scene transitions, inspector wiring, merge conflict resolution, Safe Mode compilation fixes. The work that kept the project in a runnable state.</p>
+        </div>
+        <div class="role-cell">
+          <div class="role-cell-label">Secondary</div>
+          <div class="role-cell-title">QA &amp; Manual Testing</div>
+          <p>Test plans, manual test execution, and documented expected vs. actual results across AR rendering, iOS camera permissions, and scene flow — every sprint.</p>
+        </div>
+        <div class="role-cell">
+          <div class="role-cell-label">Throughout</div>
+          <div class="role-cell-title">Code Reviewer &amp; Team Lead</div>
+          <p>Reviewed every teammate PR with technical feedback on null safety, coroutine cleanup, and architecture. Managed communication, task division, and sprint coordination.</p>
+        </div>
+      </div>
+
+      <table class="check-table reveal">
+        <thead>
+          <tr>
+            <th>Contribution</th>
+            <th>What I did</th>
+            <th>Sprint</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>AR Foundation Setup</td>
+            <td>Set up Unity's AR Foundation subsystem and provider layer in Sprint 1 — wiring <code>XRSessionSubsystem</code>, <code>XRCameraSubsystem</code>, <code>XRPlaneSubsystem</code>, and <code>XRImageTrackingSubsystem</code> to their ARKit (iOS) and ARCore/OpenXR (Quest) providers. Configured Player Settings for AR compatibility across iOS and Android. This established the AR session lifecycle and camera intrinsics pipeline that every later feature relied on.</td>
+            <td><span class="badge-teal">S1</span></td>
+          </tr>
+          <tr>
+            <td>iOS Build Work</td>
+            <td>Committed iterative iOS builds throughout the project to validate AR rendering on physical hardware. Identified the Unity → Xcode connection error in Sprint 1 (documented as a known bug, fixed in Sprint 2). In Sprints 2–3 debugged the full iOS build pipeline — camera clear flags, URP transparency, background color, and Xcode export settings — and documented iOS-specific AR build differences for camera permissions and device compatibility.</td>
+            <td><span class="badge-teal">S1 – S3</span></td>
+          </tr>
+          <tr>
+            <td>AR Rendering Fixes</td>
+            <td>Debugged URP transparency and background rendering for iOS builds — fixed camera clear flags, background color (yellow bug), and scene lighting resets after merges. Resolved black screen after URP build. Maintained consistent AR camera rendering across merges and Player Settings changes across both sprints.</td>
+            <td><span class="badge-teal">S2 · S3</span></td>
+          </tr>
+          <tr>
+            <td>Scene Management</td>
+            <td>Organized Asset and Scene hierarchy for cross-platform builds. Merged <code>MainScene.unity</code> after binary conflict. Verified scene references, prefab integrity, and material assignments after every teammate merge across three sprints to prevent silent breakage.</td>
+            <td><span class="badge-teal">S1 – S3</span></td>
+          </tr>
+          <tr>
+            <td>AOISetupHelper Expansion</td>
+            <td>Expanded <code>AOISetupHelper</code> in Sprint 3 so the full XR stack installs automatically — auto-creating <code>ARSession</code>, <code>ARSessionOrigin</code>, AR Camera, world-space Canvas, and required Prefabs on scene load. This eliminated the manual per-machine setup friction that caused inconsistent environments across the team, and validated camera permissions and anchor pool creation as part of the auto-init flow.</td>
+            <td><span class="badge-purple">S3</span></td>
+          </tr>
+          <tr>
+            <td>Anchor Debug Panel</td>
+            <td>Built <code>UIAnchorDebugPanel</code> — in-editor context menu buttons for running deterministic anchor smoke tests, counting active anchors, and clearing the pool. Validates the full anchor pipeline without needing a physical AR device connected.</td>
+            <td><span class="badge-purple">S3</span></td>
+          </tr>
+          <tr>
+            <td>Anchor Lifecycle</td>
+            <td>Refactored <code>UIAnchor</code> to properly handle fade-in/out, pulse animation, and click callbacks. Fixed coroutine timing conflicts that caused anchors to persist after their lifetime expired. Implemented <code>UpdateAnchor()</code> for dynamic detection refreshes.</td>
+            <td><span class="badge-purple">S3</span></td>
+          </tr>
+          <tr>
+            <td>CI/CD Extensions</td>
+            <td>Added pre-commit C# formatter (whitespace + naming rules), script compilation validation, missing <code>.meta</code> file detection, and pipeline logging. Wired the CI smoke test to fail the build if any exception is logged during scene initialization — turning a manual catch into an automated gate.</td>
+            <td><span class="badge-purple">S3</span></td>
+          </tr>
+          <tr>
+            <td>UI &amp; Scene Flow</td>
+            <td>Implemented Entry/Main Menu screen, gameplay navigation, and Exit/Quit for the Sprint 4 scavenger hunt. Repaired scene management connections across menu → gameplay → end screen, including correcting Build Settings ordering and rewiring broken inspector references after merge.</td>
+            <td><span class="badge-amber">S4</span></td>
+          </tr>
+          <tr>
+            <td>Compilation Unblocking</td>
+            <td>Resolved the Unity Safe Mode startup issue that prevented the project from running — identified invalid class structures, misplaced <code>[SerializeField]</code> attributes, and missing type references introduced by a merge, then corrected them to restore the project for the team before the live demo.</td>
+            <td><span class="badge-amber">S4</span></td>
+          </tr>
+          <tr>
+            <td>Code Reviews</td>
+            <td>Reviewed PRs each sprint: scene merges, MediaPipe simulation updates, AOISetupHelper, UI anchor adjustments. Feedback covered null reference handling around <code>Camera.main</code>, animation coroutine cleanup, confidence threshold hardcoding, and Unity naming conventions.</td>
+            <td><span class="badge-teal">S1 – S4</span></td>
+          </tr>
+          <tr>
+            <td>Project Coordination</td>
+            <td>Managed team communication across all four sprints. Logged merge issues and bug reports clearly so teammates could act without re-investigating the same problem. Divided tasks for Sprint 4, ran recap meetings, and contributed to all sprint deliverable documentation.</td>
+            <td><span class="badge-teal">S1 – S4</span></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <div class="zone-div" data-depth="// 05 qa"></div>
+
+  <!-- ══════════ QA ══════════ -->
+  <section class="section">
+    <div class="container">
+      <div class="reveal">
+        <p class="eyebrow">// 05 — Quality Assurance</p>
+        <h2 class="section-title">Testing a system<br>you can't easily mock.</h2>
+        <div class="section-rule" aria-hidden="true"></div>
+        <p style="color:var(--c-mist);max-width:680px;margin-bottom:var(--space-md);">
+          AR systems are notoriously hard to test — the environment is physical, the camera feed is live,
+          and subsystems like ARKit and ARCore don't have simple unit-testable interfaces.
+          The test strategy had to work around this by splitting coverage across
+          four approaches: automated smoke tests in CI, manual functional tests on device,
+          in-editor simulation via mock data, and formal test case documentation with
+          build-linked results for traceability.
+        </p>
+      </div>
+
+      <!-- Methodologies -->
+      <h3 class="reveal" style="font-family:var(--font-display);font-size:1.3rem;font-weight:600;color:var(--c-star);margin-bottom:var(--space-sm);">8 Testing Methodologies</h3>
+      <div class="qa-method-grid reveal" data-delay="40">
+        <div class="qa-method-cell">
+          <div class="qa-method-name">Exploratory</div>
+          <p>Open-ended sessions on physical devices to find edge cases the spec didn't anticipate — especially around AR rendering, camera permissions, and lighting changes in real environments.</p>
+        </div>
+        <div class="qa-method-cell">
+          <div class="qa-method-name">Smoke Testing</div>
+          <p>Scene load and AR subsystem initialization verified on every CI run. The <code>UIAnchorDebugPanel</code> enables deterministic in-editor smoke tests without a connected AR device.</p>
+        </div>
+        <div class="qa-method-cell">
+          <div class="qa-method-name">Scenario-Based</div>
+          <p>Full end-to-end flows: object detected → LLM queried → anchor placed → user taps anchor → result displayed. Tests the integration seams between components, not just individual units.</p>
+        </div>
+        <div class="qa-method-cell">
+          <div class="qa-method-name">Performance</div>
+          <p>Frame rate benchmarks targeting ≥5 FPS detection, &lt;100ms LLM response, and memory usage under 2GB during sustained AR sessions. Anchor pooling verified to eliminate GC allocation spikes.</p>
+        </div>
+        <div class="qa-method-cell">
+          <div class="qa-method-name">Security</div>
+          <p>API key exposure scanning (no hardcoded keys in source), input validation for LLM prompts (injection prevention), and camera data privacy (no unnecessary storage or transmission of frames).</p>
+        </div>
+        <div class="qa-method-cell">
+          <div class="qa-method-name">Accessibility</div>
+          <p>Colorblind-safe confidence colour palette verified across three standard colour blindness types. Anchor text contrast ratios checked. Foundation for future text-to-speech and haptic output.</p>
+        </div>
+        <div class="qa-method-cell">
+          <div class="qa-method-name">Integration</div>
+          <p>Verifying the full detection → manager → LLM → anchor chain works together across real build targets, not just in editor. Cross-platform parity between iOS ARKit and Android ARCore builds.</p>
+        </div>
+        <div class="qa-method-cell">
+          <div class="qa-method-name">Regression</div>
+          <p>Post-merge re-runs of all test cases after scene conflicts, PR merges, or Player Settings changes — preventing the category of bug where a fix in one area silently breaks another.</p>
+        </div>
+      </div>
+
+      <!-- Test cases -->
+      <h3 class="reveal" style="font-family:var(--font-display);font-size:1.3rem;font-weight:600;color:var(--c-star);margin-top:var(--space-lg);margin-bottom:var(--space-sm);">31 Test Cases Across 4 Sprints</h3>
+      <p class="reveal" style="color:var(--c-mist);font-size:0.88rem;margin-bottom:var(--space-sm);">Each test case includes component scope, configuration, exact steps, expected result, and a linked build commit for traceability. Sprints 1–3 built the core anchor and detection coverage; Sprint 4 added tap-to-detect and scavenger hunt session flow.</p>
+      <div class="tc-grid reveal" data-delay="40">
+        <div class="tc-card"><div class="tc-id">TC-001 <span class="tc-cat tc-functional">Functional</span></div><div class="tc-name">Anchor Creation Smoke Test</div></div>
+        <div class="tc-card"><div class="tc-id">TC-002 <span class="tc-cat tc-functional">Functional</span></div><div class="tc-name">Anchor Pooling Load &amp; Lifetime</div></div>
+        <div class="tc-card"><div class="tc-id">TC-003 <span class="tc-cat tc-functional">Functional</span></div><div class="tc-name">Capacity &amp; Rate Limiting</div></div>
+        <div class="tc-card"><div class="tc-id">TC-004 <span class="tc-cat tc-integration">Integration</span></div><div class="tc-name">LLM Connectivity Test</div></div>
+        <div class="tc-card"><div class="tc-id">TC-005 <span class="tc-cat tc-integration">Integration</span></div><div class="tc-name">Detection Loop Stability</div></div>
+        <div class="tc-card"><div class="tc-id">TC-006 <span class="tc-cat tc-performance">Performance</span></div><div class="tc-name">Frame Rate Benchmark</div></div>
+        <div class="tc-card"><div class="tc-id">TC-007 <span class="tc-cat tc-performance">Performance</span></div><div class="tc-name">Memory Usage Under Load</div></div>
+        <div class="tc-card"><div class="tc-id">TC-008 <span class="tc-cat tc-security">Security</span></div><div class="tc-name">API Key Exposure Scan</div></div>
+        <div class="tc-card"><div class="tc-id">TC-009 <span class="tc-cat tc-security">Security</span></div><div class="tc-name">Input Validation / Injection</div></div>
+        <div class="tc-card"><div class="tc-id">TC-010 <span class="tc-cat tc-access">Accessibility</span></div><div class="tc-name">Colorblind Palette Verification</div></div>
+        <div class="tc-card"><div class="tc-id">TC-011 <span class="tc-cat tc-functional">Functional</span></div><div class="tc-name">Billboard Effect</div></div>
+        <div class="tc-card"><div class="tc-id">TC-012 <span class="tc-cat tc-functional">Functional</span></div><div class="tc-name">Anchor Lifetime Expiration</div></div>
+        <div class="tc-card"><div class="tc-id">TC-013 <span class="tc-cat tc-functional">Functional</span></div><div class="tc-name">Max Anchor Capacity</div></div>
+        <div class="tc-card"><div class="tc-id">TC-014 <span class="tc-cat tc-integration">Integration</span></div><div class="tc-name">End-to-End Detection Flow</div></div>
+        <div class="tc-card"><div class="tc-id">TC-015 <span class="tc-cat tc-performance">Performance</span></div><div class="tc-name">Network Failure Graceful Degradation</div></div>
+        <div class="tc-card"><div class="tc-id">TC-016 <span class="tc-cat tc-security">Security</span></div><div class="tc-name">Invalid API Key Handling</div></div>
+        <div class="tc-card"><div class="tc-id">TC-017 <span class="tc-cat tc-functional">Functional</span></div><div class="tc-name">Anchor Click Callback</div></div>
+        <div class="tc-card"><div class="tc-id">TC-018 <span class="tc-cat tc-integration">Integration</span></div><div class="tc-name">AOISetupHelper Auto-Init</div></div>
+        <div class="tc-card"><div class="tc-id">TC-019 <span class="tc-cat tc-functional">Functional</span></div><div class="tc-name">Tap-Based Detection Trigger</div></div>
+        <div class="tc-card"><div class="tc-id">TC-020 <span class="tc-cat tc-functional">Functional</span></div><div class="tc-name">Tap Detection Accuracy</div></div>
+        <div class="tc-card"><div class="tc-id">TC-021 <span class="tc-cat tc-functional">Functional</span></div><div class="tc-name">Object Matching Logic</div></div>
+        <div class="tc-card"><div class="tc-id">TC-022 <span class="tc-cat tc-functional">Functional</span></div><div class="tc-name">Tap-to-Register</div></div>
+        <div class="tc-card"><div class="tc-id">TC-023 <span class="tc-cat tc-functional">Functional</span></div><div class="tc-name">Proximity Detection Range</div></div>
+        <div class="tc-card"><div class="tc-id">TC-024 <span class="tc-cat tc-integration">Integration</span></div><div class="tc-name">Game State Management</div></div>
+        <div class="tc-card"><div class="tc-id">TC-025 <span class="tc-cat tc-functional">Functional</span></div><div class="tc-name">Visual Highlighting System</div></div>
+        <div class="tc-card"><div class="tc-id">TC-026 <span class="tc-cat tc-integration">Integration</span></div><div class="tc-name">Format Conversion (MediaPipe Bridge)</div></div>
+        <div class="tc-card"><div class="tc-id">TC-027 <span class="tc-cat tc-functional">Functional</span></div><div class="tc-name">Item Registration Logic</div></div>
+        <div class="tc-card"><div class="tc-id">TC-028 <span class="tc-cat tc-functional">Functional</span></div><div class="tc-name">Duplicate Registration Guard</div></div>
+        <div class="tc-card"><div class="tc-id">TC-029 <span class="tc-cat tc-functional">Functional</span></div><div class="tc-name">UI Auto-Creation (UIHelper)</div></div>
+        <div class="tc-card"><div class="tc-id">TC-030 <span class="tc-cat tc-functional">Functional</span></div><div class="tc-name">UI State After Registration</div></div>
+        <div class="tc-card"><div class="tc-id">TC-031 <span class="tc-cat tc-integration">Integration</span></div><div class="tc-name">End-to-End Scavenger Hunt Flow</div></div>
+      </div>
+    </div>
+  </section>
+
+  <div class="zone-div" data-depth="// 06 ci/cd"></div>
+
+  <!-- ══════════ CI/CD ══════════ -->
+  <section class="section">
+    <div class="container">
+      <div class="reveal">
+        <p class="eyebrow">// 06 — CI / CD Pipeline</p>
+        <h2 class="section-title">Automated gates<br>for a Unity project.</h2>
+        <div class="section-rule" aria-hidden="true"></div>
+        <p style="color:var(--c-mist);max-width:680px;margin-bottom:var(--space-md);">
+          Unity projects break in ways that aren't obvious from a diff. A missing <code>.meta</code> file, a
+          scene serialized with a stale GUID, or a missing component reference compiles cleanly but crashes
+          at runtime. The CI/CD pipeline was designed around these Unity-specific failure modes —
+          with quality gates that catch issues before they reach main and cause the team to lose
+          a working build. Every push and pull request runs the full pipeline automatically.
+        </p>
+      </div>
+
+      <!-- Pipeline stages -->
+      <div class="ci-flow reveal">
+        <div class="ci-step">
+          <span class="ci-step-icon">🔀</span>
+          <div class="ci-step-name">Trigger</div>
+          <div class="ci-step-sub">Push or PR to<br>main / develop</div>
+        </div>
+        <div class="ci-arrow">→</div>
+        <div class="ci-step mine">
+          <span class="ci-step-icon">🔍</span>
+          <div class="ci-step-name">Quality Gate</div>
+          <div class="ci-step-sub">Lint · null scan<br>meta validation</div>
+          <span class="ci-mine-label">my additions</span>
+        </div>
+        <div class="ci-arrow">→</div>
+        <div class="ci-step">
+          <span class="ci-step-icon">🧪</span>
+          <div class="ci-step-name">Test</div>
+          <div class="ci-step-sub">Unity Edit Mode<br>Play Mode tests</div>
+        </div>
+        <div class="ci-arrow">→</div>
+        <div class="ci-step mine">
+          <span class="ci-step-icon">💨</span>
+          <div class="ci-step-name">Smoke Test</div>
+          <div class="ci-step-sub">Scene init · subsystems<br>fail on exception</div>
+          <span class="ci-mine-label">my additions</span>
+        </div>
+        <div class="ci-arrow">→</div>
+        <div class="ci-step">
+          <span class="ci-step-icon">🏗️</span>
+          <div class="ci-step-name">Build</div>
+          <div class="ci-step-sub">iOS · Android<br>GitHub artifact</div>
+        </div>
+        <div class="ci-arrow">→</div>
+        <div class="ci-step">
+          <span class="ci-step-icon">🚀</span>
+          <div class="ci-step-name">Release</div>
+          <div class="ci-step-sub">Artifact upload<br>version tag</div>
+        </div>
+      </div>
+
+      <div class="ci-check-grid" style="margin-top:var(--space-md);">
+        <div class="ci-check-card mine reveal">
+          <div class="ci-check-heading">// checks I added — Sprint 3</div>
+          <ul class="ci-check-list">
+            <li><strong style="color:var(--c-star);">Pre-commit C# formatter</strong> — enforces whitespace and naming rules before a commit lands, so style issues never enter PR review</li>
+            <li><strong style="color:var(--c-star);">Null safety scan</strong> — counts null checks in every C# script; flags components that dereference without guarding (the root cause of BUG-001)</li>
+            <li><strong style="color:var(--c-star);">Error handling verification</strong> — scans for try-catch coverage in async and network-facing code paths</li>
+            <li><strong style="color:var(--c-star);">Missing .meta file detection</strong> — Unity silently breaks when .meta files are absent from commits; this gate catches them before merge</li>
+            <li><strong style="color:var(--c-star);">Script compilation validation</strong> — runs Unity's headless compiler to surface compile errors that only appear on specific platform targets</li>
+            <li><strong style="color:var(--c-star);">Smoke test gate</strong> — boots the Unity scene in Edit Mode via CLI; if any exception is logged during initialization, the build fails immediately</li>
+          </ul>
+        </div>
+        <div class="ci-check-card reveal" data-delay="60">
+          <div class="ci-check-heading">// full pipeline checks (Riya + team)</div>
+          <ul class="ci-check-list">
+            <li>Unity Edit Mode and Play Mode test execution on every push</li>
+            <li>Multi-platform build matrix — iOS (ARKit), Android (ARCore)</li>
+            <li>Component initialization checks — Start/Awake present in MonoBehaviours</li>
+            <li>Input validation patterns — IsNullOrEmpty / IsNullOrWhiteSpace coverage</li>
+            <li>API key security scan — regex-based detection, excludes valid placeholder strings</li>
+            <li>Code quality checks — TODO/FIXME detection, script file counting</li>
+            <li>Artifact upload — build outputs stored per run for download and device deployment</li>
+            <li>Cross-platform compatibility — Ubuntu, macOS, and Windows runners tested</li>
+          </ul>
+        </div>
+      </div>
+
+      <!-- Security / Threat Model -->
+      <div style="margin-top:var(--space-lg);">
+        <h3 class="reveal" style="font-family:var(--font-display);font-size:1.3rem;font-weight:600;color:var(--c-star);margin-bottom:var(--space-sm);">Security &amp; Threat Model</h3>
+        <p class="reveal" style="color:var(--c-mist);font-size:0.9rem;max-width:680px;margin-bottom:var(--space-sm);line-height:1.75;">
+          The project included a formal threat model identifying four attack surfaces and their mitigations — integrated into the CI pipeline rather than left as documentation only.
+        </p>
+        <table class="check-table reveal" data-delay="40">
+          <thead>
+            <tr><th>Asset / Surface</th><th>Risk</th><th>Mitigation</th></tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>AR Camera Data</td>
+              <td>Data leakage — raw camera frames captured or intercepted</td>
+              <td>TLS encryption on all API calls; frames never stored or transmitted beyond the LLM prompt; no cloud vision API used for detection</td>
+            </tr>
+            <tr>
+              <td>LLM API Key</td>
+              <td>Key exposure in source code or logs</td>
+              <td>Environment variables only — never hardcoded; CI security scan with regex detection on every push; excluded placeholder strings from false-positive triggering</td>
+            </tr>
+            <tr>
+              <td>LLM Prompt Input</td>
+              <td>Prompt injection via crafted object labels or user input</td>
+              <td>Input validation on all user-generated strings before they enter the prompt template; <code>IsNullOrEmpty</code> guards on detection labels; CI scan for validation patterns</td>
+            </tr>
+            <tr>
+              <td>Cloud Storage / Backend</td>
+              <td>Unauthorized access to backend APIs or stored data</td>
+              <td>Role-based access control; Firebase authentication for backend endpoints; TLS/SSL on all client-server communication</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <div class="zone-div" data-depth="// 07 team"></div>
+
+  <!-- ══════════ TEAM ══════════ -->
+  <section class="section">
+    <div class="container">
+      <div class="reveal">
+        <p class="eyebrow">// 07 — Team</p>
+        <h2 class="section-title">Started as 3.<br>Grew to 5 for the demo.</h2>
+        <div class="section-rule" aria-hidden="true"></div>
+        <p style="color:var(--c-mist);max-width:640px;margin-bottom:var(--space-md);">
+          The project ran through CPSC 490/491 with Alyssa Barrientos and Riya Jain as the primary
+          two contributors after a third original team member withdrew following Sprint 1.
+          Three additional contributors joined for Sprint 4 to build the scavenger hunt prototype for the live class demo.
+        </p>
+      </div>
+      <div class="team-grid reveal">
+        <div class="team-card me">
+          <div class="team-name">Alyssa Barrientos</div>
+          <div class="team-sprint">Sprints 1–4 &nbsp;·&nbsp; <span style="color:var(--c-biolume);">me</span></div>
+          <ul>
+            <li>AR rendering &amp; URP fixes</li>
+            <li>Scene management &amp; merges</li>
+            <li>Anchor debug tooling</li>
+            <li>UI / scene flow (Sprint 4)</li>
+            <li>Compilation unblocking</li>
+            <li>Code reviews · QA · coordination</li>
+          </ul>
+        </div>
+        <div class="team-card">
+          <div class="team-name">Riya Jain</div>
+          <div class="team-sprint">Sprints 1–4</div>
+          <ul>
+            <li>MediaPipe integration</li>
+            <li>AOI Integration Manager &amp; LLM backend</li>
+            <li>GitHub Actions CI/CD pipeline</li>
+            <li>Formal test cases (TC-001–005, TC-019–031)</li>
+            <li>Bug tracking &amp; operations docs</li>
+          </ul>
+        </div>
+        <div class="team-card">
+          <div class="team-name">Sprint 4 Team</div>
+          <div class="team-sprint">Sprint 4 only · 3 contributors</div>
+          <ul>
+            <li>David — LLM item list gen, timer, screens</li>
+            <li>Mohamed — session lifecycle &amp; interaction flow</li>
+            <li>Marco — offline generator, AR marker spawner, UI manager</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <div class="zone-div" data-depth="// 08 future"></div>
+
+  <!-- ══════════ FUTURE WORK ══════════ -->
+  <section class="section">
+    <div class="container">
+      <div class="reveal">
+        <p class="eyebrow">// 08 — Future Work</p>
+        <h2 class="section-title">Where this goes<br>from here.</h2>
+        <div class="section-rule" aria-hidden="true"></div>
+        <p style="color:var(--c-mist);max-width:640px;margin-bottom:var(--space-md);">
+          The prototype proves the concept — detection, LLM query, and spatial anchor rendering all
+          running in a real AR session. These are the natural next engineering steps to close the
+          gap between research prototype and production system.
+        </p>
+      </div>
+      <div class="future-grid">
+        <div class="future-card reveal">
+          <span class="future-num">// 01</span>
+          <h4 class="future-title">On-Device LLM</h4>
+          <p>Replace the REST call with a quantized model (Phi-3, Gemma 2B, or LLaMA 3 8B) running via llama.cpp or ExecuTorch on the device. Eliminates network latency, API key exposure, and the offline failure mode entirely. Feasible on iPhone 15 Pro and modern Android flagships.</p>
+        </div>
+        <div class="future-card reveal" data-delay="50">
+          <span class="future-num">// 02</span>
+          <h4 class="future-title">Vision-Language Input</h4>
+          <p>Upgrade from label-based prompting (MediaPipe outputs "chair" → send "chair" to LLM) to sending a cropped image patch to a vision-language model (LLaVA, PaLI-Gemma). Richer semantic context, better responses for ambiguous or unusual objects the detector labels poorly.</p>
+        </div>
+        <div class="future-card reveal" data-delay="100">
+          <span class="future-num">// 03</span>
+          <h4 class="future-title">Persistent Spatial Memory</h4>
+          <p>Use ARKit Scene Reconstruction or ARCore's Geospatial API to persist anchor positions between sessions — so the same physical object in the same room shows its cached LLM response on re-entry without re-querying the backend.</p>
+        </div>
+        <div class="future-card reveal" data-delay="50">
+          <span class="future-num">// 04</span>
+          <h4 class="future-title">Multi-User Shared AR</h4>
+          <p>Synchronize anchor state across devices via ARCore Cloud Anchors or Niantic Lightship. Multiple users in the same physical space could collaboratively tag and annotate objects — turning the tool into a shared, persistent knowledge layer for classrooms or field teams.</p>
+        </div>
+        <div class="future-card reveal" data-delay="100">
+          <span class="future-num">// 05</span>
+          <h4 class="future-title">Full Accessibility Layer</h4>
+          <p>Text-to-speech output of anchor labels for users with visual impairments, haptic feedback on detection events, high-contrast and large-text anchor modes. The colorblind-safe palette from Sprint 3 is the first layer of this work.</p>
+        </div>
+        <div class="future-card reveal" data-delay="150">
+          <span class="future-num">// 06</span>
+          <h4 class="future-title">Known Issues to Fix</h4>
+          <p>Unsubscribe AR events in <code>OnDisable</code> as well as <code>OnDestroy</code> in AOIIntegrationManager to close the memory leak. Replace the Arial.ttf runtime font reference with a bundled asset. Add structured fallback caching when the LLM endpoint is unreachable.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<footer class="site-footer">
+  <p class="footer-text">
+    designed &amp; built by
+    <span class="footer-accent">alyssa barrientos</span>
+    · alyartbar ·
+    <span id="footer-year"></span>
+  </p>
+</footer>
+
+<script>
+'use strict';
+document.getElementById('footer-year').textContent = new Date().getFullYear();
+
+// Starfield
+(function() {
+  const canvas = document.getElementById('stars');
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+  let W, H, stars = [];
+  function resize() { W = canvas.width = window.innerWidth; H = canvas.height = window.innerHeight; }
+  function mkStar() { return { x: Math.random()*W, y: Math.random()*H, r: Math.random()*1.1+0.2, a: Math.random()*0.45+0.08, speed: Math.random()*0.12+0.02, drift: (Math.random()-0.5)*0.025, phase: Math.random()*Math.PI*2 }; }
+  resize(); stars = Array.from({ length: 130 }, mkStar);
+  window.addEventListener('resize', resize);
+  let t = 0;
+  (function draw() {
+    ctx.clearRect(0, 0, W, H); t += 0.007;
+    for (const s of stars) {
+      s.y -= s.speed; s.x += s.drift;
+      if (s.y < -2) { s.y = H+2; s.x = Math.random()*W; }
+      if (s.x < -2) s.x = W+2; if (s.x > W+2) s.x = -2;
+      const tw = s.a * (0.7 + 0.3*Math.sin(t*1.4+s.phase));
+      ctx.beginPath(); ctx.arc(s.x, s.y, s.r, 0, Math.PI*2);
+      ctx.fillStyle = `rgba(232,244,248,${tw})`; ctx.fill();
+    }
+    requestAnimationFrame(draw);
+  })();
+})();
+
+// ── Custom cursor ─────────────────────────
+(function() {
+  if (window.innerWidth < 600) return;
+  const ring = document.getElementById('cursor-ring');
+  const dot  = document.getElementById('cursor-dot');
+  if (!ring || !dot) return;
+
+  let mx = -200, my = -200, rx = -200, ry = -200;
+
+  document.addEventListener('mousemove', e => { mx = e.clientX; my = e.clientY; });
+
+  (function tick() {
+    dot.style.left  = mx + 'px';
+    dot.style.top   = my + 'px';
+    rx += (mx - rx) * 0.14;
+    ry += (my - ry) * 0.14;
+    ring.style.left = rx + 'px';
+    ring.style.top  = ry + 'px';
+    requestAnimationFrame(tick);
+  })();
+
+  const hoverSel = 'a, button, .tool-doc-card, .future-card, .goal-card, .team-card, .tc-card, .ci-step, .skill-doc-row, .check-table tr, .qa-method-cell';
+  document.addEventListener('mouseover', e => {
+    if (e.target.closest(hoverSel)) ring.classList.add('hover');
+  });
+  document.addEventListener('mouseout', e => {
+    if (e.target.closest(hoverSel)) ring.classList.remove('hover');
+  });
+})();
+
+// Nav scroll
+(function() {
+  const nav = document.getElementById('site-nav');
+  if (!nav) return;
+  const u = () => nav.classList.toggle('scrolled', window.scrollY > 40);
+  window.addEventListener('scroll', u, { passive: true }); u();
+})();
+
+// Scroll reveal
+(function() {
+  const els = document.querySelectorAll('.reveal');
+  if (!els.length) return;
+  const obs = new IntersectionObserver(entries => {
+    entries.forEach(e => {
+      if (e.isIntersecting) {
+        const d = e.target.dataset.delay ? parseInt(e.target.dataset.delay) : 0;
+        setTimeout(() => e.target.classList.add('visible'), d);
+        obs.unobserve(e.target);
+      }
+    });
+  }, { threshold: 0.08 });
+  els.forEach(el => obs.observe(el));
+})();
+</script>
+</body>
+</html>
