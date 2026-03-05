@@ -1,0 +1,1278 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="Raytracer & OpenGL Graphics Engine — C++ graphics pipeline built from scratch. By Alyssa Barrientos." />
+  <title>Raytracer Dev · AlyArtBar</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,600;0,700;1,300&family=Fira+Code:wght@400;500&family=DM+Sans:ital,wght@0,300;0,400;1,300&display=swap" rel="stylesheet" />
+
+<style>
+/* ─── Reset ─────────────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; }
+img, svg { display: block; max-width: 100%; }
+
+/* ─── Design tokens (matches AlyArtBar system) ───────────── */
+:root {
+  --void:    #020810;
+  --abyss:   #060f1e;
+  --trench:  #0b1f36;
+  --depth:   #0f3050;
+  --current: #1a5c72;
+  --thermal: #1f8a7a;
+  --biolume: #3dffd0;
+  --seafoam: #7eeedd;
+  --nebula:  #a78bfa;
+  --star:    #e8f4f8;
+  --mist:    #8ab0c4;
+  --ghost:   #3d5a6a;
+  --amber:   #f0a050;
+  --fd: 'Cormorant Garamond', Georgia, serif;
+  --fm: 'Fira Code', 'Courier New', monospace;
+  --fb: 'DM Sans', system-ui, sans-serif;
+  --ease: cubic-bezier(.16,1,.3,1);
+}
+
+/* ─── Base ───────────────────────────────────────────────── */
+body {
+  background: var(--void);
+  color: var(--star);
+  font-family: var(--fb);
+  font-weight: 300;
+  font-size: clamp(.875rem, 2.2vw, 1rem);
+  line-height: 1.75;
+  overflow-x: hidden;
+}
+/* Custom cursor — desktop only, applied via JS */
+body.has-cursor { cursor: none; }
+
+::selection { background: rgba(61,255,208,.2); color: var(--biolume); }
+::-webkit-scrollbar { width: 4px; }
+::-webkit-scrollbar-track { background: var(--abyss); }
+::-webkit-scrollbar-thumb { background: var(--depth); border-radius: 2px; }
+::-webkit-scrollbar-thumb:hover { background: var(--current); }
+:focus-visible { outline: 1.5px solid var(--biolume); outline-offset: 3px; }
+
+/* ─── Atmosphere ─────────────────────────────────────────── */
+.grain {
+  position: fixed; inset: 0; z-index: 1; pointer-events: none;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  background-size: 200px; opacity: .032; mix-blend-mode: overlay;
+}
+#stars { position: fixed; inset: 0; z-index: 0; pointer-events: none; }
+
+/* ─── Cursor (hidden on touch) ───────────────────────────── */
+#cursor-ring, #cursor-dot {
+  display: none;
+  position: fixed; z-index: 9999; border-radius: 50%; pointer-events: none;
+  transform: translate(-50%,-50%); transition: width 180ms, height 180ms;
+}
+body.has-cursor #cursor-ring,
+body.has-cursor #cursor-dot { display: block; }
+#cursor-ring { width: 28px; height: 28px; border: 1px solid rgba(61,255,208,.4); }
+#cursor-dot  { width: 6px;  height: 6px;  background: var(--biolume); box-shadow: 0 0 8px rgba(61,255,208,.6); }
+#cursor-ring.h { width: 44px; height: 44px; border-color: rgba(61,255,208,.6); }
+
+/* ─── Nav ────────────────────────────────────────────────── */
+#site-nav {
+  position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+  padding: 1rem 1.25rem;
+  transition: background 350ms var(--ease), backdrop-filter 350ms var(--ease);
+}
+#site-nav.scrolled {
+  background: rgba(2,8,16,.9);
+  backdrop-filter: blur(14px);
+  border-bottom: 1px solid var(--depth);
+}
+.nav-inner {
+  display: flex; align-items: center; justify-content: space-between;
+  max-width: 1200px; margin: 0 auto; gap: 1rem;
+}
+.nav-brand { display: flex; align-items: baseline; gap: .5rem; text-decoration: none; flex-shrink: 0; }
+.brand-i { font-family: var(--fd); font-size: 1.4rem; font-weight: 700; color: var(--biolume); line-height: 1; }
+.brand-n { font-family: var(--fm); font-size: .68rem; letter-spacing: .25em; color: var(--mist); text-transform: uppercase; }
+.nav-links { display: none; align-items: center; gap: 2rem; list-style: none; }
+.nav-links a {
+  font-family: var(--fm); font-size: .68rem; letter-spacing: .15em; text-transform: uppercase;
+  color: var(--mist); text-decoration: none; position: relative; padding-bottom: 2px; transition: color 180ms;
+}
+.nav-links a::after {
+  content: ''; position: absolute; bottom: -2px; left: 0; right: 0; height: 1px;
+  background: var(--biolume); transform: scaleX(0); transform-origin: left; transition: transform 350ms var(--ease);
+}
+.nav-links a:hover { color: var(--seafoam); }
+.nav-links a:hover::after { transform: scaleX(1); }
+.nav-back {
+  font-family: var(--fm); font-size: .68rem; letter-spacing: .15em; text-transform: uppercase;
+  color: var(--ghost); text-decoration: none; transition: color 180ms; white-space: nowrap;
+}
+.nav-back::before { content: '← '; }
+.nav-back:hover { color: var(--biolume); }
+
+/* ─── Layout ─────────────────────────────────────────────── */
+main {
+  position: relative; z-index: 2;
+  max-width: 1200px; margin: 0 auto;
+  padding: 0 1.25rem;
+}
+.section { padding: 4rem 0; }
+.container { max-width: 900px; }
+
+/* Zone divider */
+.zone-div {
+  position: relative; height: 1px; z-index: 2;
+  background: linear-gradient(to right, transparent, var(--depth), transparent);
+}
+.zone-div::after {
+  content: attr(data-d); position: absolute; right: 0; top: 50%; transform: translateY(-50%);
+  font-family: var(--fm); font-size: .6rem; letter-spacing: .2em; text-transform: uppercase;
+  color: var(--ghost); background: var(--void); padding-left: 1rem;
+}
+
+/* Reveal */
+.rv {
+  opacity: 0; clip-path: inset(0 0 30px 0);
+  transition: opacity 700ms var(--ease), clip-path 700ms var(--ease);
+}
+.rv.on { opacity: 1; clip-path: inset(0 0 0 0); }
+
+/* ─── Typography helpers ─────────────────────────────────── */
+.eyebrow {
+  font-family: var(--fm); font-size: .68rem; letter-spacing: .25em;
+  text-transform: uppercase; color: var(--biolume); margin-bottom: .4rem;
+}
+.section-title {
+  font-family: var(--fd); font-size: clamp(1.7rem, 4vw, 2.8rem); font-weight: 600;
+  color: var(--star); line-height: 1.15; margin-bottom: .9rem;
+}
+.section-rule { width: 50px; height: 1px; background: linear-gradient(to right, var(--biolume), transparent); margin-bottom: 1.8rem; }
+
+/* Tags */
+.tags { display: flex; flex-wrap: wrap; gap: .35rem; }
+.tag {
+  font-family: var(--fm); font-size: .6rem; letter-spacing: .1em; text-transform: uppercase;
+  color: var(--ghost); border: 1px solid var(--depth); border-radius: 3px; padding: .18rem .55rem;
+  transition: border-color 180ms, color 180ms;
+}
+.tag:hover { border-color: var(--current); color: var(--mist); }
+
+/* Inline code */
+code {
+  font-family: var(--fm); font-size: .8em; background: var(--trench);
+  border: 1px solid var(--depth); border-radius: 3px; padding: .1em .38em;
+  color: var(--seafoam); word-break: break-word;
+}
+
+/* Buttons */
+.btn {
+  display: inline-flex; align-items: center; justify-content: center;
+  padding: .7rem 1.8rem; font-family: var(--fm); font-size: .68rem; letter-spacing: .15em;
+  text-transform: uppercase; text-decoration: none; border-radius: 3px;
+  transition: all 350ms var(--ease); border: none;
+}
+.btn-p { background: linear-gradient(135deg, var(--current), var(--thermal)); color: var(--void); box-shadow: 0 0 20px rgba(31,138,122,.25); }
+.btn-p:hover { box-shadow: 0 0 32px rgba(61,255,208,.4); transform: translateY(-2px); }
+.btn-g { background: transparent; color: var(--seafoam); border: 1px solid var(--depth); }
+.btn-g:hover { border-color: var(--biolume); color: var(--biolume); transform: translateY(-2px); box-shadow: 0 0 16px rgba(61,255,208,.1); }
+
+/* ─── HERO ───────────────────────────────────────────────── */
+.hero { padding: 8rem 0 3.5rem; position: relative; }
+.orb { position: absolute; border-radius: 50%; filter: blur(80px); pointer-events: none; }
+.o1 { width: min(500px, 80vw); height: 250px; background: radial-gradient(ellipse, var(--thermal), transparent 70%); top: 60px; left: -80px; opacity: .1; animation: od 18s ease-in-out infinite alternate; }
+.o2 { width: min(280px, 60vw); height: 280px; background: radial-gradient(ellipse, var(--nebula), transparent 70%); top: 0; right: -60px; opacity: .05; animation: od 24s ease-in-out infinite alternate-reverse; }
+@keyframes od { from { transform: translate(0,0); } to { transform: translate(20px, 25px); } }
+
+.hero-meta { display: flex; flex-wrap: wrap; align-items: center; gap: .6rem; margin-bottom: .8rem; }
+.hero-chip { font-family: var(--fm); font-size: .6rem; letter-spacing: .2em; text-transform: uppercase; color: var(--ghost); }
+.hero-chip::before { content: '// '; color: var(--current); }
+.hero-title {
+  font-family: var(--fd); font-size: clamp(2.6rem, 9vw, 6rem);
+  font-weight: 700; line-height: 1.04; color: var(--star); margin-bottom: .9rem;
+}
+.hero-title span { color: var(--biolume); }
+.hero-sub {
+  font-size: clamp(.92rem, 2vw, 1.15rem); color: var(--mist);
+  max-width: 580px; line-height: 1.7; margin-bottom: 1.6rem;
+}
+.hero-links { display: flex; flex-wrap: wrap; gap: .9rem; margin-bottom: 2.5rem; }
+
+/* Stats bar — 2 cols on mobile, 4 on wide */
+.stats {
+  display: grid; grid-template-columns: 1fr 1fr;
+  border: 1px solid var(--depth); border-radius: 6px; overflow: hidden;
+}
+.stat {
+  padding: 1.2rem .8rem; text-align: center; border-right: 1px solid var(--depth);
+  border-bottom: 1px solid var(--depth); background: var(--abyss); transition: background 350ms;
+}
+.stat:nth-child(2n) { border-right: none; }
+.stat:nth-last-child(-n+2) { border-bottom: none; }
+.stat:hover { background: var(--trench); }
+.stat-n { font-family: var(--fd); font-size: clamp(1.6rem,4vw,2.4rem); font-weight: 700; color: var(--biolume); line-height: 1; margin-bottom: .25rem; }
+.stat-l { font-family: var(--fm); font-size: .6rem; letter-spacing: .18em; text-transform: uppercase; color: var(--ghost); }
+
+/* ─── Pipeline Concept ───────────────────────────────────── */
+/* A full-width concept explainer between hero and architecture */
+.pipe-concept {
+  background: var(--abyss); border: 1px solid var(--depth);
+  border-radius: 6px; padding: 1.6rem; margin-bottom: 2rem;
+}
+.pipe-concept-title {
+  font-family: var(--fm); font-size: .68rem; letter-spacing: .2em; text-transform: uppercase;
+  color: var(--biolume); margin-bottom: 1rem; display: flex; align-items: center; gap: .5rem;
+}
+.pipe-concept-title::before { content: ''; width: 6px; height: 6px; border-radius: 50%; background: var(--biolume); flex-shrink: 0; }
+.pipe-stages {
+  display: flex; flex-direction: column; gap: .6rem;
+}
+.pipe-stage {
+  display: flex; flex-direction: column; gap: .25rem;
+  background: rgba(61,255,208,.03); border: 1px solid rgba(61,255,208,.08);
+  border-radius: 4px; padding: .8rem 1rem;
+}
+.ps-label { font-family: var(--fm); font-size: .68rem; color: var(--biolume); font-weight: 500; }
+.ps-desc { font-size: .86rem; color: var(--mist); line-height: 1.6; }
+.ps-desc code { font-size: .78em; }
+.pipe-arrow { text-align: center; color: var(--ghost); font-family: var(--fm); font-size: .75rem; line-height: 1; }
+
+/* ─── Architecture ───────────────────────────────────────── */
+/* Default: 1 col. Expands at 640px. */
+.arch-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1rem; margin-top: 1.8rem;
+}
+.arch-card {
+  background: var(--abyss); border: 1px solid var(--depth);
+  border-radius: 6px; padding: 1.3rem; min-width: 0;
+}
+.arch-header { display: flex; align-items: center; gap: .75rem; margin-bottom: .9rem; flex-wrap: wrap; }
+.arch-badge {
+  font-family: var(--fm); font-size: .58rem; letter-spacing: .12em; text-transform: uppercase;
+  padding: .2rem .6rem; border-radius: 3px; flex-shrink: 0;
+}
+.ab-core  { background: rgba(61,255,208,.07);  color: var(--biolume); border: 1px solid rgba(61,255,208,.18); }
+.ab-new   { background: rgba(167,139,250,.07); color: var(--nebula);  border: 1px solid rgba(167,139,250,.18); }
+.ab-phys  { background: rgba(31,138,122,.09);  color: var(--seafoam); border: 1px solid rgba(31,138,122,.22); }
+.arch-title { font-family: var(--fd); font-size: 1rem; font-weight: 600; color: var(--star); }
+.arch-files { list-style: none; display: flex; flex-direction: column; gap: .38rem; }
+.arch-files li {
+  display: flex; flex-wrap: wrap; gap: .4rem; align-items: baseline;
+  font-family: var(--fm); font-size: .73rem; line-height: 1.5;
+}
+.arch-files li::before { content: '·'; color: var(--ghost); flex-shrink: 0; }
+.af-n { color: var(--seafoam); flex-shrink: 0; }
+.af-d { color: var(--ghost); }
+
+/* ─── Assignment Cards ───────────────────────────────────── */
+.assignments { display: flex; flex-direction: column; gap: 1.8rem; margin-top: 1.8rem; }
+
+.acard {
+  background: var(--abyss); border: 1px solid var(--depth);
+  border-radius: 6px; overflow: hidden; position: relative;
+  transition: border-color 350ms, box-shadow 350ms;
+}
+.acard::before {
+  content: ''; position: absolute; top: 0; left: 0; right: 0; height: 1.5px;
+  opacity: 0; transition: opacity 350ms;
+}
+.a0::before { background: linear-gradient(to right, transparent, var(--amber),   transparent); }
+.a1::before { background: linear-gradient(to right, transparent, var(--biolume),  transparent); }
+.a2::before { background: linear-gradient(to right, transparent, var(--seafoam),  transparent); }
+.a3::before { background: linear-gradient(to right, transparent, var(--nebula),   transparent); }
+.a4::before { background: linear-gradient(to right, transparent, var(--mist),     transparent); }
+.a5::before { background: linear-gradient(to right, transparent, var(--thermal),  transparent); }
+.acard:hover { border-color: var(--current); box-shadow: 0 8px 30px rgba(15,48,80,.5); }
+.acard:hover::before { opacity: 1; }
+
+/* Assignment header — always horizontal flex that wraps */
+.acard-head {
+  display: flex; flex-wrap: wrap; align-items: center; gap: 1rem;
+  padding: 1.2rem 1.4rem; border-bottom: 1px solid var(--depth);
+  background: rgba(6,15,30,.6);
+}
+.acard-num {
+  font-family: var(--fd); font-size: clamp(1.6rem, 4vw, 2.4rem);
+  font-weight: 700; line-height: 1; flex-shrink: 0;
+}
+.a0 .acard-num { color: var(--amber);   opacity: .55; }
+.a1 .acard-num { color: var(--biolume); opacity: .5;  }
+.a2 .acard-num { color: var(--seafoam); opacity: .5;  }
+.a3 .acard-num { color: var(--nebula);  opacity: .5;  }
+.a4 .acard-num { color: var(--mist);    opacity: .45; }
+.a5 .acard-num { color: var(--thermal); opacity: .55; }
+.acard-ht { flex: 1; min-width: 200px; }
+.acard-title { font-family: var(--fd); font-size: clamp(1rem, 2.5vw, 1.15rem); font-weight: 600; color: var(--star); margin-bottom: .5rem; }
+
+/* Assignment body */
+.acard-body { padding: 1.4rem; display: flex; flex-direction: column; gap: 1.2rem; }
+
+/* Description */
+.adesc { color: var(--mist); font-size: .9rem; line-height: 1.78; }
+
+/* ─── CG Concept boxes ───────────────────────────────────── */
+.concept {
+  background: rgba(167,139,250,.04); border: 1px solid rgba(167,139,250,.15);
+  border-radius: 4px; padding: 1rem 1.1rem;
+}
+.concept-label {
+  font-family: var(--fm); font-size: .62rem; letter-spacing: .2em;
+  text-transform: uppercase; color: var(--nebula); margin-bottom: .75rem;
+}
+.concept-body { color: var(--mist); font-size: .9rem; line-height: 1.85; }
+.concept-body p { margin-bottom: .75rem; }
+.concept-body p:last-child { margin-bottom: 0; }
+.concept-body strong { color: var(--star); font-weight: 600; }
+.concept-body em { color: var(--seafoam); font-style: normal; font-family: var(--fm); font-size: .88em; }
+/* Equation block */
+.eq {
+  display: block; font-family: var(--fm); font-size: .8rem;
+  color: var(--seafoam); margin: .6rem 0; padding: .5rem .9rem;
+  background: rgba(61,255,208,.04); border-left: 2px solid rgba(167,139,250,.4);
+  border-radius: 0 3px 3px 0; overflow-x: auto; white-space: pre;
+}
+/* Step list inside concept */
+.concept-steps { list-style: none; display: flex; flex-direction: column; gap: .5rem; margin: .65rem 0; }
+.concept-steps li {
+  position: relative; padding-left: 1.25rem;
+  font-size: .88rem; color: var(--mist); line-height: 1.7;
+}
+.concept-steps li::before {
+  content: '→'; position: absolute; left: 0; top: .18em;
+  color: var(--thermal); font-family: var(--fm); font-size: .78rem;
+}
+
+/* ─── My Contributions ───────────────────────────────────── */
+.contrib {
+  background: rgba(61,255,208,.03); border: 1px solid rgba(61,255,208,.1);
+  border-radius: 4px; padding: 1rem 1.1rem;
+}
+.contrib-label {
+  font-family: var(--fm); font-size: .62rem; letter-spacing: .2em;
+  text-transform: uppercase; color: var(--biolume); margin-bottom: .75rem;
+  display: flex; align-items: center; gap: .45rem;
+}
+.contrib-label::before {
+  content: ''; width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0;
+  background: var(--biolume); box-shadow: 0 0 6px rgba(61,255,208,.6);
+  animation: pulse 2.5s ease-in-out infinite;
+}
+.contrib ul { list-style: none; display: flex; flex-direction: column; gap: .6rem; }
+.contrib li {
+  position: relative; padding-left: 1.25rem;
+  font-size: .87rem; color: var(--seafoam); line-height: 1.7;
+}
+.contrib li::before {
+  content: '↳'; position: absolute; left: 0; top: .16em;
+  color: var(--thermal); font-family: var(--fm); font-size: .8rem;
+}
+
+/* ─── Code blocks ────────────────────────────────────────── */
+.code-wrap { overflow: hidden; border-radius: 0 0 5px 5px; }
+.code-head {
+  display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: .4rem;
+  background: var(--trench); border: 1px solid var(--depth); border-bottom: none;
+  border-radius: 5px 5px 0 0; padding: .45rem 1rem;
+}
+.code-lang { font-family: var(--fm); font-size: .6rem; letter-spacing: .15em; text-transform: uppercase; color: var(--biolume); }
+.code-file { font-family: var(--fm); font-size: .6rem; letter-spacing: .06em; color: var(--ghost); }
+pre {
+  background: var(--abyss); border: 1px solid var(--depth);
+  border-radius: 0 0 5px 5px; padding: 1.2rem 1.4rem;
+  overflow-x: auto; /* ONLY pre scrolls horizontally — nothing else */
+  font-family: var(--fm); font-size: clamp(.72rem, 1.8vw, .82rem);
+  line-height: 1.8; color: var(--mist); tab-size: 4;
+  white-space: pre; word-break: normal;
+  -webkit-overflow-scrolling: touch;
+}
+/* Syntax */
+.kw  { color: #7eb8ff; }
+.fn  { color: #c9a0ff; }
+.str { color: #7ee8a2; }
+.cm  { color: var(--ghost); font-style: italic; }
+.num { color: var(--amber); }
+.hi  { color: var(--biolume); }
+
+/* ─── Honest notes ───────────────────────────────────────── */
+.acard-note {
+  background: rgba(240,160,80,.04); border: 1px solid rgba(240,160,80,.14);
+  border-radius: 4px; padding: .85rem 1.1rem;
+}
+.note-label { font-family: var(--fm); font-size: .6rem; letter-spacing: .2em; text-transform: uppercase; color: var(--amber); margin-bottom: .35rem; }
+.acard-note p { font-size: clamp(.82rem, 2vw, .88rem); color: var(--mist); line-height: 1.65; }
+
+/* ─── Skills ─────────────────────────────────────────────── */
+.skills-list { display: flex; flex-direction: column; margin-top: 1.8rem; }
+.skill-row {
+  display: flex; flex-direction: column; gap: .3rem;
+  padding: 1.2rem 0; border-bottom: 1px solid var(--depth);
+  transition: background 350ms;
+}
+.skill-row:first-child { border-top: 1px solid var(--depth); }
+.skill-name { font-family: var(--fd); font-size: 1.05rem; font-weight: 600; color: var(--star); }
+.skill-where { font-family: var(--fm); font-size: .6rem; letter-spacing: .1em; color: var(--ghost); margin-bottom: .2rem; }
+.skill-desc { color: var(--mist); font-size: .9rem; line-height: 1.65; }
+.skill-desc code { font-size: .76em; border: none; background: rgba(61,255,208,.06); }
+
+/* ─── Footer ─────────────────────────────────────────────── */
+footer {
+  position: relative; z-index: 2;
+  padding: 1.8rem 1.25rem; border-top: 1px solid var(--depth);
+  text-align: center; margin-top: 5rem;
+}
+.footer-text { font-family: var(--fm); font-size: .6rem; letter-spacing: .2em; color: var(--ghost); text-transform: lowercase; }
+.footer-acc { color: var(--current); }
+
+/* ─── Animations ─────────────────────────────────────────── */
+@keyframes pulse {
+  0%,100% { box-shadow: 0 0 0 0 rgba(61,255,208,.5); }
+  50%      { box-shadow: 0 0 0 5px rgba(61,255,208,0); }
+}
+
+/* ══════════════════════════════════════════════════════════
+   RESPONSIVE — mobile-first, expand up
+   ══════════════════════════════════════════════════════════ */
+
+/* ── ≥ 480px ─ slightly more breathing room ── */
+@media (min-width: 480px) {
+  .stats {
+    grid-template-columns: 1fr 1fr;
+  }
+  .stat:nth-child(2n) { border-right: none; }
+}
+
+/* ── ≥ 640px ─ nav links appear, layout widens ── */
+@media (min-width: 640px) {
+  #site-nav { padding: 1.2rem 2rem; }
+  main { padding: 0 2rem; }
+  footer { padding: 1.8rem 2rem; }
+  body { cursor: none; } /* re-enable only at this width via class in JS */
+
+  .nav-links { display: flex; }
+
+  .arch-grid { grid-template-columns: 1fr 1fr; }
+  /* Full-width card only when grid is 2-col */
+  .arch-card-full { grid-column: 1 / -1; }
+  /* 2-col list inside full-width card */
+  .arch-files-2col { display: grid; grid-template-columns: 1fr 1fr; gap: .38rem .6rem; }
+
+  .hero { padding: 9rem 0 4rem; }
+
+  .skill-row {
+    display: grid; grid-template-columns: 150px 1fr; gap: 1.2rem;
+    align-items: start;
+  }
+  .skill-row:hover {
+    background: rgba(11,31,54,.45);
+    margin: 0 -2rem; padding-left: 2rem; padding-right: 2rem;
+  }
+
+  .pipe-stages { flex-direction: row; align-items: stretch; }
+  .pipe-stage  { flex: 1; }
+  .pipe-arrow  { display: flex; align-items: center; padding: 0; font-size: 1rem; }
+}
+
+/* ── ≥ 900px ─ full desktop ── */
+@media (min-width: 900px) {
+  #site-nav { padding: 1.2rem 3rem; }
+  main { padding: 0 3rem; }
+  footer { padding: 2rem 3rem; }
+
+  .section { padding: 6rem 0; }
+  .hero { padding: 10rem 0 5rem; }
+
+  .stats { grid-template-columns: repeat(4, 1fr); }
+  .stat { border-bottom: none; }
+  .stat:nth-child(2n) { border-right: 1px solid var(--depth); }
+  .stat:last-child { border-right: none; }
+
+  .skill-row { grid-template-columns: 190px 1fr; gap: 2rem; }
+  .skill-row:hover {
+    margin: 0 -3rem; padding-left: 3rem; padding-right: 3rem;
+  }
+
+  .acard-body { padding: 2rem; gap: 1.4rem; }
+  .acard-head { padding: 1.4rem 2rem; }
+
+  .concept { padding: 1.1rem 1.3rem; }
+  .contrib  { padding: 1.1rem 1.3rem; }
+}
+
+/* ── Reduced motion ── */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: .01ms !important; transition-duration: .01ms !important; }
+  .rv { opacity: 1; clip-path: none; }
+}
+</style>
+</head>
+<body>
+
+<div class="grain" aria-hidden="true"></div>
+<canvas id="stars" aria-hidden="true"></canvas>
+<div id="cursor-ring" aria-hidden="true"></div>
+<div id="cursor-dot"  aria-hidden="true"></div>
+
+<!-- NAV -->
+<header id="site-nav">
+  <nav class="nav-inner" aria-label="Site navigation">
+    <a class="nav-brand" href="index.html">
+      <span class="brand-i">AB</span>
+      <span class="brand-n">AlyArtBar</span>
+    </a>
+    <ul class="nav-links" role="list">
+      <li><a href="index.html#projects">Projects</a></li>
+      <li><a href="index.html#rnd">R&amp;D</a></li>
+      <li><a href="index.html#contact">Contact</a></li>
+      <li><a href="assets/resume.pdf" target="_blank" rel="noopener">Resume ↗</a></li>
+    </ul>
+    <a class="nav-back" href="index.html#projects">Projects</a>
+  </nav>
+</header>
+
+<main>
+
+<!-- ══ HERO ══════════════════════════════════════════════ -->
+<section class="hero">
+  <div class="orb o1" aria-hidden="true"></div>
+  <div class="orb o2" aria-hidden="true"></div>
+
+  <div class="hero-meta rv">
+    <span class="hero-chip">C++ / OpenGL · Graphics Pipeline</span>
+    <span class="hero-chip" style="color:var(--mist)">2024 — 2025</span>
+  </div>
+
+  <h1 class="hero-title rv" style="transition-delay:60ms">Raytracer<br><span>Dev</span></h1>
+
+  <p class="hero-sub rv" style="transition-delay:120ms">
+    A C++ graphics engine built from scratch across six assignments — raw shader setup, OBJ import, parametric curves, skeletal rigs, and real-time cloth physics driven by four interchangeable numerical integrators. No engine. No framework. Every byte on the GPU is placed there manually.
+  </p>
+
+  <div class="tags rv" style="transition-delay:160ms; margin-bottom:.9rem">
+    <span class="tag">C++17</span><span class="tag">OpenGL 3.3 Core</span><span class="tag">GLFW</span>
+    <span class="tag">GLAD</span><span class="tag">GLM</span><span class="tag">Dear ImGui</span>
+    <span class="tag">GLSL Shaders</span><span class="tag">VAO / VBO / EBO</span>
+    <span class="tag">OBJ Parser</span><span class="tag">Bezier / B-Spline</span>
+    <span class="tag">Frenet Frame</span><span class="tag">Skeletal Rigging</span>
+    <span class="tag">Spring-Mass Physics</span><span class="tag">RK4</span>
+  </div>
+
+  <div class="hero-links rv" style="transition-delay:200ms">
+    <a href="https://github.com/AlyBarr/RaytracerDev" target="_blank" rel="noopener" class="btn btn-p">View on GitHub ↗</a>
+    <a href="#assignments" class="btn btn-g">All Assignments ↓</a>
+  </div>
+
+  <div class="stats rv" style="transition-delay:260ms">
+    <div class="stat"><div class="stat-n">6</div><div class="stat-l">Assignments</div></div>
+    <div class="stat"><div class="stat-n">~25</div><div class="stat-l">Source Files</div></div>
+    <div class="stat"><div class="stat-n">4</div><div class="stat-l">ODE Integrators</div></div>
+    <div class="stat"><div class="stat-n">Solo</div><div class="stat-l">Independent</div></div>
+  </div>
+</section>
+
+<div class="zone-div" data-d="// 01 rasterization pipeline"></div>
+
+<!-- ══ THE GPU PIPELINE — CG CONCEPT ═════════════════════ -->
+<section class="section">
+  <div class="container rv">
+    <p class="eyebrow">// 01 — How the GPU pipeline works</p>
+    <h2 class="section-title">The rasterization<br>pipeline, explained</h2>
+    <div class="section-rule"></div>
+    <p style="color:var(--mist);max-width:660px;margin-bottom:1.6rem;font-size:.95rem">
+      Every assignment in this project plugs into the same fundamental sequence. Understanding it explains every OpenGL call, every GLSL shader, every matrix upload.
+    </p>
+
+    <div class="pipe-concept">
+      <div class="pipe-concept-title">The rasterization pipeline — 6 stages</div>
+      <div class="pipe-stages">
+        <div class="pipe-stage">
+          <div class="ps-label">① CPU → GPU</div>
+          <div class="ps-desc">C++ calls <code>glBufferData</code> to copy vertex positions, normals, and indices from RAM into GPU memory. A <strong>VAO</strong> records the layout, a <strong>VBO</strong> holds the raw bytes, an <strong>EBO</strong> holds triangle indices. None of this runs a shader yet — it's just uploading data.</div>
+        </div>
+        <div class="pipe-arrow">↓</div>
+        <div class="pipe-stage">
+          <div class="ps-label">② Vertex Shader</div>
+          <div class="ps-desc">Runs once per vertex, entirely on the GPU, in parallel. Its job is one thing: output <code>gl_Position</code> in <strong>clip space</strong> by multiplying the vertex position by the MVP matrix chain. It can also pass data — normals, colours, UVs — downstream to the fragment stage via <code>out</code> variables.</div>
+        </div>
+        <div class="pipe-arrow">↓</div>
+        <div class="pipe-stage">
+          <div class="ps-label">③ Primitive Assembly + Rasterisation</div>
+          <div class="ps-desc">OpenGL groups processed vertices into triangles, then <strong>rasterises</strong> them — figures out which screen pixels each triangle covers and generates a <em>fragment</em> per pixel. It also interpolates vertex outputs (normals, UVs) across the triangle surface using barycentric coordinates.</div>
+        </div>
+        <div class="pipe-arrow">↓</div>
+        <div class="pipe-stage">
+          <div class="ps-label">④ Fragment Shader</div>
+          <div class="ps-desc">Runs once per fragment (pixel candidate). Receives the interpolated data from the vertex stage. Its job: output a final <code>vec4</code> colour. This is where lighting math lives — Phong diffuse, specular highlights, all of it is just arithmetic on the interpolated normal and light direction vectors.</div>
+        </div>
+        <div class="pipe-arrow">↓</div>
+        <div class="pipe-stage">
+          <div class="ps-label">⑤ Depth Test + Framebuffer</div>
+          <div class="ps-desc">Each fragment's depth (z-value) is tested against the <strong>depth buffer</strong>. If something closer has already been drawn there, this fragment is discarded. Survivors are written to the <strong>colour buffer</strong>, which <code>glfwSwapBuffers</code> flips to screen each frame.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- MVP Chain concept -->
+    <div class="concept rv" style="margin-bottom:1rem">
+      <div class="concept-label">∑ CG Concept — The MVP Matrix Chain</div>
+      <div class="concept-body">
+        <p>Every vertex goes through three coordinate space transformations before it reaches the screen. The vertex shader computes them as a single matrix multiply:</p>
+        <span class="eq">gl_Position = Projection · View · Model · vec4(position, 1.0)</span>
+        <p>
+          <strong>Model matrix</strong> — moves the object from its own local origin into the shared world. <code>glm::translate · rotate · scale</code> compose this. Each object in the scene has its own model matrix.
+        </p>
+        <p>
+          <strong>View matrix</strong> — transforms world space so the camera is at the origin looking down −Z. <code>glm::lookAt(cameraPos, target, up)</code> builds this. In this project the camera is an orbital sphere — yaw, pitch, radius — converted to Cartesian then passed to <code>lookAt</code>.
+        </p>
+        <p>
+          <strong>Projection matrix</strong> — maps 3D camera space to 2D clip space, introducing perspective foreshortening. <code>glm::perspective(fov, aspect, near, far)</code> builds a frustum that makes distant objects smaller. <code>glm::ortho</code> — used in A1 — skips this, producing the flat "technical drawing" look.
+        </p>
+        <p>Order matters: matrix multiplication is not commutative. The multiplication reads right-to-left — vertex is transformed by Model first, then View, then Projection. Swapping them produces wrong results. This is why the 4th homogeneous coordinate w=1 for positions and w=0 for direction vectors — so translation in the matrix affects positions but not directions.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="zone-div" data-d="// 02 architecture"></div>
+
+<!-- ══ ARCHITECTURE ══════════════════════════════════════ -->
+<section class="section">
+  <div class="container">
+    <div class="rv">
+      <p class="eyebrow">// 02 — Architecture</p>
+      <h2 class="section-title">Subsystems added<br>across six submissions</h2>
+      <div class="section-rule"></div>
+      <p style="color:var(--mist);max-width:640px;margin-bottom:1.8rem;font-size:.95rem">The codebase grows one assignment at a time without breaking the existing run loop. By A5 ~25 source files are organized into these subsystems.</p>
+    </div>
+
+    <div class="arch-grid">
+      <div class="arch-card rv">
+        <div class="arch-header">
+          <span class="arch-badge ab-core">A0 – A5</span>
+          <span class="arch-title">Application Core</span>
+        </div>
+        <ul class="arch-files">
+          <li><span class="af-n">Application.h/cpp</span><span class="af-d">Singleton — owns GLFW window, ImGui context, run loop</span></li>
+          <li><span class="af-n">Renderer.h/cpp</span><span class="af-d">Orbital camera, lighting uniforms, axis draw</span></li>
+          <li><span class="af-n">ShaderLoader.h/cpp</span><span class="af-d">Compile/link GLSL, extract error logs</span></li>
+          <li><span class="af-n">ErrorHandling.h/cpp</span><span class="af-d">GLFW callbacks, tinyfd message boxes</span></li>
+          <li><span class="af-n">Globals.h/cpp</span><span class="af-d">Shared state, window title, constants</span></li>
+        </ul>
+      </div>
+
+      <div class="arch-card rv" style="transition-delay:60ms">
+        <div class="arch-header">
+          <span class="arch-badge ab-core">A2 +</span>
+          <span class="arch-title">Shape System</span>
+        </div>
+        <ul class="arch-files">
+          <li><span class="af-n">Shape.h/cpp</span><span class="af-d">Polymorphic base — pure-virtual draw(GLuint)</span></li>
+          <li><span class="af-n">ShapeManager.h/cpp</span><span class="af-d">Owns Shape* heap ptrs — add/delete/select</span></li>
+          <li><span class="af-n">FileImporter.h/cpp</span><span class="af-d">OBJ + .swp + .skel + .attach loaders</span></li>
+          <li><span class="af-n">ImportShape.h/cpp</span><span class="af-d">OBJ → VAO/VBO/EBO pipeline</span></li>
+          <li><span class="af-n">ColorPresets.h/cpp</span><span class="af-d">Preset colour table + custom RGB</span></li>
+        </ul>
+      </div>
+
+      <div class="arch-card rv" style="transition-delay:120ms">
+        <div class="arch-header">
+          <span class="arch-badge ab-new">A3</span>
+          <span class="arch-title">Parametric Geometry</span>
+        </div>
+        <ul class="arch-files">
+          <li><span class="af-n">Curve.h/cpp</span><span class="af-d">evalBezier + evalBSpline → CurvePoint {V,T,N,B}</span></li>
+          <li><span class="af-n">Surface.h/cpp</span><span class="af-d">makeSurfRev — sweeps profile 2π around axis</span></li>
+          <li><span class="af-n">ImportCurve.h/cpp</span><span class="af-d">Parses .swp control-point files</span></li>
+        </ul>
+      </div>
+
+      <div class="arch-card rv" style="transition-delay:180ms">
+        <div class="arch-header">
+          <span class="arch-badge ab-new">A4</span>
+          <span class="arch-title">Skeletal System</span>
+        </div>
+        <ul class="arch-files">
+          <li><span class="af-n">Joint.h/cpp</span><span class="af-d">Local mat4, bind-pose inverse, world mat, children[]</span></li>
+          <li><span class="af-n">MatrixStack.h/cpp</span><span class="af-d">push/pop/top — std::vector&lt;glm::mat4&gt;</span></li>
+          <li><span class="af-n">SkeletalModel.h/cpp</span><span class="af-d">Recursive bind + current-frame traversal</span></li>
+          <li><span class="af-n">ImportCharacter.h/cpp</span><span class="af-d">.skel JSON + .attach weight maps</span></li>
+        </ul>
+      </div>
+
+      <div class="arch-card arch-card-full rv" style="transition-delay:240ms">
+        <div class="arch-header">
+          <span class="arch-badge ab-phys">A5</span>
+          <span class="arch-title">Physics Framework</span>
+        </div>
+        <ul class="arch-files arch-files-2col">
+          <li><span class="af-n">ParticleSystem.h</span><span class="af-d">Base : Shape — m_state, pure-virtual evalF</span></li>
+          <li><span class="af-n">TimeStepper.h/cpp</span><span class="af-d">ForwardEuler / Trapezoid / Midpoint / RK4</span></li>
+          <li><span class="af-n">PendulumSystem.h/cpp</span><span class="af-d">Spring-mass, wind, 5× VAO/VBO/EBO sets</span></li>
+          <li><span class="af-n">SimpleSystem.h/cpp</span><span class="af-d">2-particle orbit — integrator smoke test</span></li>
+          <li><span class="af-n">SimplePendulum.h/cpp</span><span class="af-d">Fixed-anchor single spring</span></li>
+          <li><span class="af-n">SimpleChain.h/cpp</span><span class="af-d">n-link spring chain</span></li>
+          <li><span class="af-n">SimpleCloth.h/cpp</span><span class="af-d">NxN grid, structural + shear springs</span></li>
+          <li><span class="af-n">main.cpp</span><span class="af-d">3 lines — getInstance().initialize().run()</span></li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="zone-div" data-d="// 03 assignments"></div>
+
+<!-- ══ ASSIGNMENTS ════════════════════════════════════════ -->
+<section class="section" id="assignments">
+  <div style="max-width:1100px">
+    <div class="rv">
+      <p class="eyebrow">// 03 — Assignments &amp; My Contributions</p>
+      <h2 class="section-title">Six submissions,<br>every system hand-coded</h2>
+      <div class="section-rule"></div>
+      <p style="color:var(--mist);max-width:640px;margin-bottom:1.8rem;font-size:.95rem">Each card covers the CG concept behind the assignment, exactly what I wrote, and honest notes on where things worked and where they didn't.</p>
+    </div>
+
+    <div class="assignments">
+
+      <!-- ── A0 ───────────────────────────────────────────── -->
+      <div class="acard a0 rv">
+        <div class="acard-head">
+          <div class="acard-num">00</div>
+          <div class="acard-ht">
+            <div class="acard-title">OpenGL Environment &amp; Animated Letterforms</div>
+            <div class="tags"><span class="tag">OpenGL 3.3</span><span class="tag">GLAD</span><span class="tag">GLFW</span><span class="tag">GLSL</span><span class="tag">VAO / VBO</span></div>
+          </div>
+        </div>
+        <div class="acard-body">
+
+          <p class="adesc">First contact with the OpenGL pipeline. Configure GLAD/GLFW from scratch, write vertex and fragment shaders, render the letters of my name animating independently. Each glyph is built from hand-defined triangle vertices stored in an <code>unordered_map&lt;char, vector&lt;float&gt;&gt;</code>, uploaded to a VAO/VBO, and transformed each frame via a <code>uniform mat4 transform</code>.</p>
+
+          <div class="concept">
+            <div class="concept-label">⬡ CG Concept — VAO, VBO, EBO &amp; GPU Memory</div>
+            <div class="concept-body">
+              <p>The GPU cannot read CPU-side vectors directly. Data has to be explicitly copied into <strong>GPU-side buffers</strong> and OpenGL told how to interpret the raw bytes. Three objects do this:</p>
+              <ul class="concept-steps">
+                <li><strong>VBO (Vertex Buffer Object)</strong> — a block of GPU memory. Filled via <code>glBufferData(GL_ARRAY_BUFFER, size, data, GL_STATIC_DRAW)</code>. At this point it's just bytes — OpenGL doesn't know what's in it yet.</li>
+                <li><strong>EBO (Element Buffer Object)</strong> — also GPU memory, but holding an array of unsigned ints. Each int is an index into the VBO. Instead of duplicating a shared corner vertex three times, it's stored once and referenced three times. A cube's 8 unique corners can describe all 12 triangles.</li>
+                <li><strong>VAO (Vertex Array Object)</strong> — records how to interpret the VBO bytes. Calling <code>glVertexAttribPointer(0, 3, GL_FLOAT, false, stride, offset)</code> inside a bound VAO stores: "attribute location 0 starts at this byte offset, is 3 floats wide, with the next attribute stride bytes away." Binding the VAO later restores all of this without re-specifying every layout call.</li>
+              </ul>
+              <p>In A0, each letter has its own VAO/VBO pair. Every frame: bind the VAO, upload the transform as a uniform matrix, call <code>glDrawArrays</code>. The GPU reads the recorded layout and runs the vertex shader on every vertex automatically.</p>
+            </div>
+          </div>
+
+          <div class="concept">
+            <div class="concept-label">∑ CG Concept — Homogeneous Coordinates &amp; Transform Composition</div>
+            <div class="concept-body">
+              <p>A 3×3 matrix can rotate and scale a 3D point, but not translate it — translation is an addition, not a multiplication. <strong>Homogeneous coordinates</strong> fix this by adding a 4th component, <em>w</em>:</p>
+              <span class="eq">vec4(x, y, z, w=1)  →  position
+vec4(x, y, z, w=0)  →  direction (translation has no effect)</span>
+              <p>Now a 4×4 matrix can encode rotation, scale, and translation simultaneously. The transform for A0 is a single matrix composing a rotation (built with <code>glm::rotate</code>) and a translation. Matrix multiplication is right-to-left, so <strong>T · R · vertex</strong> means: rotate first, then translate — the order is critical. Swapping them puts the pivot in the wrong place. Each letter's <code>rotations[i]</code> value increments at a unique rate per frame, creating the independent phase offsets.</p>
+            </div>
+          </div>
+
+          <div class="contrib">
+            <div class="contrib-label">My Contributions</div>
+            <ul>
+              <li>Configured GLAD/GLFW for OpenGL 3.3 Core Profile — window hints, <code>gladLoadGLLoader((GLADloadproc)glfwGetProcAddress)</code>, driver issues resolved with Prof. Garcia-Gomez</li>
+              <li>Authored vertex + fragment shaders; wrote <code>compileShader</code> and <code>createShaderProgram</code> helpers with <code>glGetShaderInfoLog</code> error extraction</li>
+              <li>Built all letter geometry by hand — each glyph a <code>std::vector&lt;float&gt;</code> of triangle vertices in <code>std::unordered_map&lt;char, std::vector&lt;float&gt;&gt; letters</code></li>
+              <li>Per-letter animation state in <code>std::vector&lt;float&gt; rotations</code> and <code>colorOffsets</code>; composed transform each frame, uploaded via <code>glUniformMatrix4fv</code></li>
+              <li>Wired full render loop: VAO/VBO creation, <code>glBufferData</code>, <code>glVertexAttribPointer</code>, uniform upload, <code>glfwSwapBuffers</code>, <code>framebuffer_size_callback</code></li>
+            </ul>
+          </div>
+
+          <div class="code-head"><span class="code-lang">GLSL — Vertex Shader</span><span class="code-file">main.cpp</span></div>
+<pre><span class="kw">#version</span> <span class="num">330</span> core
+<span class="kw">layout</span>(location = <span class="num">0</span>) <span class="kw">in</span> vec3 aPos;
+<span class="kw">uniform</span> mat4 transform;   <span class="cm">// T·R matrix, uploaded each frame per letter</span>
+<span class="kw">void</span> <span class="fn">main</span>() {
+    gl_Position = transform * <span class="fn">vec4</span>(aPos, <span class="num">1.0</span>);   <span class="cm">// w=1 → position</span>
+}</pre>
+
+          <div class="acard-note">
+            <div class="note-label">⚡ Notes</div>
+            <p>Primary challenge was environment setup — GLAD loader required driver-level work to configure. Once live, the assignment came together quickly. No known runtime bugs.</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── A1 ───────────────────────────────────────────── -->
+      <div class="acard a1 rv" style="transition-delay:40ms">
+        <div class="acard-head">
+          <div class="acard-num">01</div>
+          <div class="acard-ht">
+            <div class="acard-title">3D Lit Cube — MVP Stack &amp; Phong Shading</div>
+            <div class="tags"><span class="tag">GLM</span><span class="tag">MVP Matrix</span><span class="tag">Phong Lighting</span><span class="tag">Per-face Normals</span><span class="tag">Key Callback</span></div>
+          </div>
+        </div>
+        <div class="acard-body">
+
+          <p class="adesc">First 3D pipeline. A cube with per-face normals and interleaved vertex data, Phong ambient+diffuse lighting in the fragment shader, keyboard-driven rotation and colour-cycling, and a movable point light. First use of GLM for matrix math.</p>
+
+          <div class="concept">
+            <div class="concept-label">⬡ CG Concept — Phong Shading &amp; the Normal Matrix</div>
+            <div class="concept-body">
+              <p>Phong shading decomposes incoming light into components. <strong>Ambient</strong> is a constant floor — it prevents fully unlit surfaces from being pure black:</p>
+              <span class="eq">ambient = kₐ · lightColor</span>
+              <p><strong>Diffuse</strong> uses <em>Lambert's cosine law</em>: the brightness of a surface depends on how directly it faces the light. The dot product of the normalised surface normal N and normalised light direction L gives this angle's cosine:</p>
+              <span class="eq">diffuse = max(dot(N, L), 0.0) · lightColor</span>
+              <p>The <code>max(..., 0)</code> clamps negative values — surfaces facing away contribute zero, not negative light. Final colour:</p>
+              <span class="eq">colour = (ambient + diffuse) · objectColor</span>
+              <p><strong>The normal matrix problem:</strong> if you apply a non-uniform scale to the model (stretching it along one axis), the normals stored in the VBO become wrong — they no longer point perpendicular to the surface. The fix is transforming normals by the <em>inverse transpose of the upper-left 3×3 of the model matrix</em>:</p>
+              <span class="eq">correctedNormal = mat3(transpose(inverse(model))) · aNormal</span>
+              <p>This seems expensive but GLM computes it once per draw call. Without it, lighting on scaled meshes breaks — normals point in the wrong direction and Lambert's cosine law gives incorrect brightness.</p>
+            </div>
+          </div>
+
+          <div class="contrib">
+            <div class="contrib-label">My Contributions</div>
+            <ul>
+              <li>Defined 24 vertices (4 per face × 6 faces) with interleaved position + normal data; wired two <code>glVertexAttribPointer</code> calls — location 0 (xyz position), location 1 (xyz normal) — stride <code>6 * sizeof(float)</code></li>
+              <li>Phong vertex shader: <code>FragPos = vec3(model * vec4(aPos, 1.0))</code> and <code>Normal = mat3(transpose(inverse(model))) * aNormal</code></li>
+              <li>Phong fragment shader: ambient and diffuse terms from <code>uniform vec3 lightPos/lightColor/objectColor</code></li>
+              <li>MVP stack each frame: <code>glm::rotate</code> by accumulated rotation; <code>glm::lookAt</code> view; <code>glm::ortho</code> projection — all uploaded via <code>glUniformMatrix4fv</code></li>
+              <li><code>key_callback</code>: arrow keys accumulate rotation; <code>C</code> cycles 8 preset colours; <code>J/L/I/K/U/O</code> translate <code>lightPos</code> on all three axes</li>
+              <li>Smooth colour transition: <code>glm::mix(currentColor, targetColor, transitionProgress)</code> advancing <code>transitionProgress += transitionSpeed</code> per frame</li>
+            </ul>
+          </div>
+
+          <div class="code-head"><span class="code-lang">GLSL — Phong Fragment Shader</span><span class="code-file">main.cpp</span></div>
+<pre><span class="kw">uniform</span> vec3 lightPos, lightColor, objectColor;
+<span class="kw">in</span>  vec3 FragPos, Normal;          <span class="cm">// interpolated from vertex shader</span>
+<span class="kw">out</span> vec4 FragColor;
+<span class="kw">void</span> <span class="fn">main</span>() {
+    vec3 ambient = <span class="num">0.2</span> * lightColor;
+    vec3 N = <span class="fn">normalize</span>(Normal);
+    vec3 L = <span class="fn">normalize</span>(lightPos - FragPos);
+    float diff = <span class="fn">max</span>(<span class="fn">dot</span>(N, L), <span class="num">0.0</span>);  <span class="cm">// Lambert cosine law</span>
+    vec3 diffuse = diff * lightColor;
+    FragColor = <span class="fn">vec4</span>((ambient + diffuse) * objectColor, <span class="num">1.0</span>);
+}</pre>
+
+          <div class="acard-note">
+            <div class="note-label">⚡ Notes</div>
+            <p>Smooth colour interpolation had edge cases in the transition logic. Camera-movement extra credit was not completed. Core cube, Phong lighting, and all keyboard controls work correctly.</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── A2 ───────────────────────────────────────────── -->
+      <div class="acard a2 rv" style="transition-delay:40ms">
+        <div class="acard-head">
+          <div class="acard-num">02</div>
+          <div class="acard-ht">
+            <div class="acard-title">3D Shape Viewer — Singleton App, OBJ Import &amp; ImGui</div>
+            <div class="tags"><span class="tag">Singleton</span><span class="tag">OBJ Parser</span><span class="tag">Dear ImGui</span><span class="tag">ShapeManager</span><span class="tag">Spherical Camera</span></div>
+          </div>
+        </div>
+        <div class="acard-body">
+
+          <p class="adesc">Major architecture upgrade. Moved to a Singleton <code>Application</code> with dedicated subsystems. Users load any OBJ mesh at runtime via native file dialog, view it in a 3D viewport with an orbital camera, and inspect it through ImGui panels. Ships with classic test meshes: bunny, teapot, skull, torus, garg.</p>
+
+          <div class="concept">
+            <div class="concept-label">⬡ CG Concept — OBJ Parsing &amp; Index Buffers</div>
+            <div class="concept-body">
+              <p>An OBJ file separates <em>what exists</em> from <em>how it connects</em>. <code>v</code> lines list unique positions; <code>f</code> lines list faces as indices into that list. A cube has 8 unique corners but 12 triangles. Without index buffers you'd store 36 vertices (3 per triangle × 12). With an EBO you store 8 vertices and 36 indices — a significant saving on dense meshes like the Stanford bunny (~70k vertices).</p>
+              <p>Parsing means: stream the file line by line. When a <code>v</code> line arrives, push its three floats into a position vector. When an <code>f</code> line arrives, push its three integers (1-based in OBJ format, so subtract 1) into the index vector. At the end, call <code>glBufferData</code> twice — once for positions into the VBO, once for indices into the EBO — then set up the VAO layout.</p>
+            </div>
+          </div>
+
+          <div class="concept">
+            <div class="concept-label">∑ CG Concept — Spherical Coordinate Camera</div>
+            <div class="concept-body">
+              <p>An orbit camera stores its position in <strong>spherical coordinates</strong> — radius, yaw (theta), pitch (phi) — instead of Cartesian xyz. This makes orbital controls trivial: dragging horizontally increments theta, dragging vertically clamps phi. Converting back to Cartesian for the view matrix:</p>
+              <span class="eq">x = target.x + radius · cos(phi) · cos(theta)
+y = target.y + radius · sin(phi)
+z = target.z + radius · cos(phi) · sin(theta)</span>
+              <p>Then <code>glm::lookAt(cameraPos, target, up)</code> builds the view matrix. Spherical coordinates prevent gimbal lock at reasonable pitch values and make radius (zoom) and orbit (yaw/pitch) fully independent controls.</p>
+            </div>
+          </div>
+
+          <div class="contrib">
+            <div class="contrib-label">My Contributions</div>
+            <ul>
+              <li>Singleton <code>Application</code>: <code>static Application* instance = nullptr</code>, <code>getInstance()</code> lazy-init, private constructor, deleted copy ctor + assignment operator, three statically-allocated subsystems</li>
+              <li><code>framebuffer_size_callback</code>: calls <code>glViewport</code> then recomputes <code>glm::perspective(45°, aspect, 0.1, 100)</code> and re-uploads on every resize</li>
+              <li><code>Renderer</code> with spherical-coord camera: <code>theta/phi/radius</code> → <code>updateCameraPosition()</code> → Cartesian → <code>glm::lookAt</code></li>
+              <li><code>ShapeManager</code> full lifecycle: <code>addShape</code>, <code>deleteShape</code> (calls <code>delete *it</code>, erases from vector, clears selection), <code>resetAllShapes</code></li>
+              <li><code>FileImporter</code> with <code>tinyfd_openFileDialog</code>; parses OBJ <code>v/f</code> lines into position + index arrays, uploads to VAO/VBO/EBO</li>
+              <li>Dear ImGui integration — <code>ImGui_ImplGlfw_InitForOpenGL</code> + <code>ImGui_ImplOpenGL3_Init</code> — per-frame lifecycle wired around scene render</li>
+              <li><code>Renderer::drawAxis</code>: per-frame VAO/VBO for RGB axis lines, <code>glUniform1i(useLighting, 0)</code> to bypass Phong</li>
+            </ul>
+          </div>
+
+          <div class="code-head"><span class="code-lang">C++ — Singleton Pattern</span><span class="code-file">Application.cpp</span></div>
+<pre>Renderer     Application::<span class="hi">renderer</span>;      <span class="cm">// static — lives for app lifetime</span>
+ShapeManager Application::<span class="hi">shapeManager</span>;
+FileImporter Application::<span class="hi">fileImporter</span>;
+Application* Application::instance = <span class="kw">nullptr</span>;
+
+Application&amp; Application::<span class="fn">getInstance</span>() {
+    <span class="kw">if</span> (!instance) instance = <span class="kw">new</span> <span class="fn">Application</span>();  <span class="cm">// private ctor</span>
+    <span class="kw">return</span> *instance;
+}
+<span class="cm">// Header: Application(const Application&amp;) = delete;
+//         Application&amp; operator=(const Application&amp;) = delete;</span></pre>
+
+        </div>
+      </div>
+
+      <!-- ── A3 ───────────────────────────────────────────── -->
+      <div class="acard a3 rv" style="transition-delay:40ms">
+        <div class="acard-head">
+          <div class="acard-num">03</div>
+          <div class="acard-ht">
+            <div class="acard-title">Parametric Curves &amp; Surfaces of Revolution</div>
+            <div class="tags"><span class="tag">Bezier</span><span class="tag">B-Spline</span><span class="tag">Bernstein Basis</span><span class="tag">Frenet Frame</span><span class="tag">Surface of Revolution</span></div>
+          </div>
+        </div>
+        <div class="acard-body">
+
+          <p class="adesc">Parametric geometry layered on the viewer. Custom <code>.swp</code> control-point files feed into <code>evalBezier</code> and <code>evalBSpline</code>, which tessellate smooth curves and compute a full Frenet-Serret frame at each sample. Those frames sweep surfaces of revolution. Test shapes: wineglass, torus, flircle, gentorus, weird.</p>
+
+          <div class="concept">
+            <div class="concept-label">∑ CG Concept — Bezier Curves &amp; Bernstein Polynomials</div>
+            <div class="concept-body">
+              <p>A Bezier curve of degree <em>n</em> is defined by <em>n+1</em> control points P₀…Pₙ. For any parameter <em>t ∈ [0,1]</em>, the curve point is a weighted average of those control points:</p>
+              <span class="eq">B(t) = Σⱼ C(n,j) · (1−t)^(n−j) · tʲ · Pⱼ</span>
+              <p>The weight for each control point is a <strong>Bernstein polynomial</strong>. Several important properties follow directly from this formula:</p>
+              <ul class="concept-steps">
+                <li>At t=0 all weight goes to P₀; at t=1 all weight goes to Pₙ — the curve passes through its endpoints.</li>
+                <li>All Bernstein polynomials sum to 1 for any t, so the result is always a convex combination — it always lies inside the <strong>convex hull</strong> of the control points. The curve can never escape the bounding region defined by the controls.</li>
+                <li>Moving one control point pulls the curve smoothly toward it everywhere in t — no local edits without global influence. This is why the constraint <code>P.size() % 3 == 1</code> (degree-3 segments sharing endpoints) creates piecewise cubics with G0 continuity.</li>
+              </ul>
+              <p>The binomial coefficient C(n,j) is computed via Pascal's rule rather than factorials to avoid overflow: <code>result *= (n−(k−i)); result /= i</code>.</p>
+            </div>
+          </div>
+
+          <div class="concept">
+            <div class="concept-label">⬡ CG Concept — Frenet-Serret Frame &amp; Surface Revolution</div>
+            <div class="concept-body">
+              <p>To build a surface from a curve, it's not enough to know <em>where</em> each sample point is — the orientation matters too: which way is forward, which way is up, and which way is sideways. The <strong>Frenet-Serret frame</strong> provides exactly this as three mutually perpendicular unit vectors at each sample:</p>
+              <ul class="concept-steps">
+                <li><strong>T (tangent)</strong> — direction the curve is heading. Computed as the normalised difference between adjacent sample positions: <code>normalize(P[i+1] − P[i])</code>.</li>
+                <li><strong>B (binormal)</strong> — perpendicular to T, computed as <code>cross(T, prev_N)</code>. Parallel-transported from the previous frame to prevent sudden flips.</li>
+                <li><strong>N (normal)</strong> — completes the right-handed frame: <code>cross(B, T)</code>. Points toward the center of curvature.</li>
+              </ul>
+              <p>For a <strong>surface of revolution</strong>, the profile curve is flat on the XZ plane. Each control point (px, 0, pz) is rotated around the Z axis at <em>steps</em> equally-spaced angles θ ∈ [0, 2π]:</p>
+              <span class="eq">x = px · cos(θ),   y = px · sin(θ),   z = pz</span>
+              <p>Connecting rings of rotated points into quads (split into two triangles each) produces the mesh. A wineglass profile swept 360° becomes a watertight wineglass mesh.</p>
+            </div>
+          </div>
+
+          <div class="contrib">
+            <div class="contrib-label">My Contributions</div>
+            <ul>
+              <li><code>unsigned binomial(n, k)</code> via Pascal's rule: <code>result *= (n-(k-i)); result /= i</code> — used directly as the Bernstein coefficient</li>
+              <li><code>evalBezier(P, steps)</code>: validates <code>P.size() &lt; 4 || P.size() % 3 != 1</code>; evaluates Bernstein weighted sum at each <code>t = i/steps</code> into a <code>CurvePoints</code> vector of <code>{V, T, N, B}</code> structs</li>
+              <li>Frenet-Serret frame: T via finite-difference normalisation; N and B via cross-products, parallel-transported frame to frame</li>
+              <li><code>ImportCurve</code>: parses <code>.swp</code> files line-by-line — reads type token, then successive lines as <code>glm::vec3</code> control points</li>
+              <li><code>Surface::makeSurfRev(profile, steps)</code>: validates profile flatness, sweeps at <code>2π/steps</code> increments, builds vertex + face arrays for VAO upload</li>
+              <li>ImGui step-count slider and curve-type selector, triggering live mesh rebuild on change</li>
+            </ul>
+          </div>
+
+          <div class="code-head"><span class="code-lang">C++ — Bernstein Basis Evaluation</span><span class="code-file">Curve.cpp — evalBezier()</span></div>
+<pre><span class="kw">for</span> (<span class="kw">unsigned</span> i = <span class="num">0</span>; i &lt;= steps; ++i) {
+    <span class="kw">float</span> t = (<span class="kw">float</span>)i / steps;
+    glm::vec3 point(<span class="num">0.0f</span>);
+    <span class="kw">unsigned</span> n = P.<span class="fn">size</span>() - <span class="num">1</span>;
+    <span class="kw">for</span> (<span class="kw">unsigned</span> j = <span class="num">0</span>; j &lt;= n; ++j) {
+        <span class="kw">float</span> w = <span class="fn">binomial</span>(n, j)
+                * std::<span class="fn">pow</span>(<span class="num">1.0f</span> - t, n - j)
+                * std::<span class="fn">pow</span>(t, j);
+        point += w * P[j];           <span class="cm">// weighted blend of control points</span>
+    }
+    <span class="cm">// finite-diff tangent T, cross-product N/B → push CurvePoint</span>
+}</pre>
+
+        </div>
+      </div>
+
+      <!-- ── A4 ───────────────────────────────────────────── -->
+      <div class="acard a4 rv" style="transition-delay:40ms">
+        <div class="acard-head">
+          <div class="acard-num">04</div>
+          <div class="acard-ht">
+            <div class="acard-title">Skeletal Animation — Joint Hierarchy &amp; World Transforms</div>
+            <div class="tags"><span class="tag">Joint Tree</span><span class="tag">MatrixStack</span><span class="tag">Bind Pose Inverse</span><span class="tag">glm::yawPitchRoll</span><span class="tag">.skel / .attach</span></div>
+          </div>
+        </div>
+        <div class="acard-body">
+
+          <p class="adesc">Hierarchical skeletal system. Loads <code>.skel</code> JSON to build a <code>Joint</code> tree; <code>.attach</code> files bind mesh vertices to joints. A recursive <code>MatrixStack</code> traversal accumulates parent-to-world transforms for both the bind pose and the current animated frame. Four character models with varying rig complexity.</p>
+
+          <div class="concept">
+            <div class="concept-label">∑ CG Concept — Hierarchical Transforms, Bind Pose &amp; Skinning</div>
+            <div class="concept-body">
+              <p>Every joint stores a <strong>local transform</strong> — how it sits relative to its parent. To animate a joint you change only its local transform, and child joints follow automatically because their world positions are computed by multiplying the chain upward:</p>
+              <span class="eq">T_world(joint) = T_world(parent) · T_local(joint)</span>
+              <p>A <strong>matrix stack</strong> implements this traversal efficiently: push a joint's local transform (which multiplies it onto the top), recurse into children (who each push their own), then pop when returning to the parent. <code>stack.top()</code> always equals the accumulated world transform at that depth in the tree.</p>
+              <p>The <strong>bind pose</strong> is the skeleton's rest configuration — the pose the mesh was designed to wrap around. Before any animation starts, you traverse the hierarchy and capture each joint's world-to-joint transform as:</p>
+              <span class="eq">T_bind⁻¹ = inverse(T_world at bind pose)</span>
+              <p>During animation, each vertex needs to know how far it has moved from its bind-pose position. The <strong>skinning matrix</strong> for each joint is:</p>
+              <span class="eq">T_skin = T_world(current frame) · T_bind⁻¹</span>
+              <p>Multiplying a vertex by this matrix first un-does the bind pose (moving it to joint-local space), then applies the current frame's world transform. Without <code>T_bind⁻¹</code>, vertices would double-transform and explode. <code>glm::yawPitchRoll(rX, rY, rZ)</code> converts ImGui Euler-angle sliders into a rotation matrix for each joint, composed with its stored translation.</p>
+            </div>
+          </div>
+
+          <div class="contrib">
+            <div class="contrib-label">My Contributions</div>
+            <ul>
+              <li><code>Joint</code>: stores <code>glm::mat4 transform</code> (local), <code>bindWorldToJointTransform</code>, <code>currentJointToWorldTransform</code>, <code>glm::vec3 rotation/translation</code>, <code>std::vector&lt;Joint*&gt; children</code></li>
+              <li><code>MatrixStack</code>: <code>push(m)</code> multiplies top by m and pushes; <code>pop()</code> removes; <code>top()</code> returns accumulated world transform — backed by <code>std::vector&lt;glm::mat4&gt;</code></li>
+              <li><code>setJointTransform(i, rX, rY, rZ)</code>: builds <code>glm::yawPitchRoll(rX,rY,rZ)</code> composed with <code>glm::translate(mat4(1), joint→getTranslation())</code></li>
+              <li><code>bindWorldToJointTransformRecursive</code>: pushes local transform, stores <code>glm::inverse(stack.top())</code> as bind-pose inverse, recurses children, pops</li>
+              <li><code>currentJointToWorldTransformsRecursive</code>: pushes local transform, stores <code>stack.top()</code> as current world, recurses, pops — called each frame</li>
+              <li><code>ImportCharacter</code>: loads skeleton JSON, OBJ mesh, and <code>.attach</code> weight table into a unified <code>CharacterShape</code></li>
+            </ul>
+          </div>
+
+          <div class="code-head"><span class="code-lang">C++ — Recursive Bind-Pose Traversal</span><span class="code-file">SkeletalModel.cpp</span></div>
+<pre><span class="kw">void</span> <span class="fn">bindWorldToJointRecursive</span>(Joint* j, MatrixStack&amp; s) {
+    s.<span class="fn">push</span>(j-><span class="fn">getTransform</span>());         <span class="cm">// accumulate: parent → this joint</span>
+    j-><span class="fn">setBindWorldToJointTransform</span>(
+        glm::<span class="fn">inverse</span>(s.<span class="fn">top</span>()));         <span class="cm">// T_bind⁻¹ captured once</span>
+    <span class="kw">for</span> (Joint* child : j-><span class="fn">getChildren</span>())
+        <span class="fn">bindWorldToJointRecursive</span>(child, s);
+    s.<span class="fn">pop</span>();                            <span class="cm">// restore parent context</span>
+}</pre>
+
+          <div class="acard-note">
+            <div class="note-label">⚡ Honest Notes</div>
+            <p>The bind-pose traversal is correct. The failure was in live pose application — accumulated transforms reset rather than composing through the hierarchy during animation, preventing character posing. Skeleton loads and displays in bind pose. Debugging recursive world-space accumulation without per-joint visual feedback is genuinely difficult; the exact bug and its cause are documented in the README.</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── A5 ───────────────────────────────────────────── -->
+      <div class="acard a5 rv" style="transition-delay:40ms">
+        <div class="acard-head">
+          <div class="acard-num">05</div>
+          <div class="acard-ht">
+            <div class="acard-title">Particle Physics — Spring-Mass, Cloth &amp; ODE Integrators</div>
+            <div class="tags"><span class="tag">evalF(state)</span><span class="tag">ForwardEuler</span><span class="tag">Trapezoid</span><span class="tag">Midpoint</span><span class="tag">RK4</span><span class="tag">Spring-Mass</span><span class="tag">Cloth</span></div>
+          </div>
+        </div>
+        <div class="acard-body">
+
+          <p class="adesc">The most technically demanding assignment. A generic ODE framework drives four progressively complex particle systems through four interchangeable numerical integrators. Each integrator calls the pure-virtual <code>evalF(state)</code> without knowing which system it's stepping. The cloth computes structural and shear springs, recomputes face normals per frame, and responds to toggleable oscillating wind.</p>
+
+          <div class="concept">
+            <div class="concept-label">∑ CG Concept — ODEs, Spring Forces &amp; Numerical Integration</div>
+            <div class="concept-body">
+              <p>A spring-mass simulation is fundamentally an <strong>Ordinary Differential Equation (ODE)</strong> problem. The state of the simulation at any moment is a flat vector of positions and velocities — one entry for each particle, interleaved:</p>
+              <span class="eq">state = [p₀, v₀, p₁, v₁, p₂, v₂, ...]</span>
+              <p><code>evalF(state)</code> computes the <em>derivative</em> of this state — how fast each value is changing. Positions change at their velocity; velocities change at their acceleration, which comes from summing forces:</p>
+              <span class="eq">evalF returns: [v₀, a₀, v₁, a₁, ...]   where a = F_total / mass</span>
+              <p><strong>Spring force</strong> between particles i and j, rest length L₀, stiffness k, drag coefficient c:</p>
+              <span class="eq">d = pⱼ − pᵢ
+F_spring = −k(|d| − L₀) · normalize(d) − c · vᵢ</span>
+              <p>To advance time, we need to integrate these derivatives. All four integrators do this differently — the tradeoff is accuracy vs computation:</p>
+              <ul class="concept-steps">
+                <li><strong>Forward Euler</strong> — 1 evalF call. <code>s_new = s + dt · evalF(s)</code>. First-order accuracy — error per step is O(dt²). Simplest but diverges fastest at large timesteps; energy can "leak in" causing springs to vibrate indefinitely or explode.</li>
+                <li><strong>Trapezoid</strong> — 2 evalF calls. Averages the derivative at the start and at an Euler-predicted endpoint. Second-order accuracy. More stable than Euler, noticeably better at moderate dt.</li>
+                <li><strong>Midpoint</strong> — 2 evalF calls. Takes a half-step to estimate the midpoint derivative, then uses that for the full step. Also second-order but better at capturing curved trajectories.</li>
+                <li><strong>RK4</strong> — 4 evalF calls. Evaluates derivatives at the start, two midpoints, and the end, then combines them in a weighted average. Fourth-order accuracy — error per step O(dt⁵). The cloth simulation runs stably at much larger timesteps than Euler would allow.</li>
+              </ul>
+            </div>
+          </div>
+
+          <div class="concept">
+            <div class="concept-label">⬡ CG Concept — Cloth as a Grid of Springs</div>
+            <div class="concept-body">
+              <p>A cloth mesh is an N×N grid of particles. Each particle is connected to its neighbours by springs of two types:</p>
+              <ul class="concept-steps">
+                <li><strong>Structural springs</strong> — horizontal and vertical neighbours. Maintain the basic fabric structure. Resist stretching along the grid axes.</li>
+                <li><strong>Shear springs</strong> — diagonal neighbours. Prevent the cloth from collapsing into a diamond shape when pulled at a corner. Without shear springs a grid of structural-only springs can shear freely.</li>
+              </ul>
+              <p>Face normals are recomputed every frame by taking the cross product of two edge vectors of each triangle — <code>normalize(cross(v1−v0, v2−v0))</code> — then averaging normals across each vertex's adjacent faces. This is why the lighting looks correct even as the cloth deforms. The cloth's VAO holds the face geometry; a separate wireframe VAO holds only the edge lines for the "show wireframe" toggle in ImGui.</p>
+            </div>
+          </div>
+
+          <div class="contrib">
+            <div class="contrib-label">My Contributions</div>
+            <ul>
+              <li><code>ParticleSystem : Shape</code> base: <code>std::vector&lt;glm::vec3&gt; m_state</code> (even index = position, odd = velocity); <code>m_initialState</code> for reset; pure-virtual <code>evalF(const std::vector&lt;glm::vec3&gt;&amp;) = 0</code></li>
+              <li>Four concrete systems: <code>SimpleSystem</code> (circular orbit smoke test), <code>SimplePendulum</code> (fixed anchor), <code>SimpleChain</code> (n-link chain), <code>SimpleCloth</code> (NxN with structural + shear springs stored as <code>glm::vec4</code> from/to/rest/k tuples)</li>
+              <li>All four integrators as <code>TimeStepper</code> subclasses: ForwardEuler, Trapezoidal, Midpoint, RK4 — plus <code>createIntegrator(IntegratorType)</code> factory</li>
+              <li>Unit sphere mesh generator from scratch: <code>generateUnitSphereMesh(radius, sectors, stacks)</code> using spherical-to-Cartesian conversion; normals as <code>normalize(position)</code>; instanced per-particle</li>
+              <li>Five separate VAO/VBO/EBO pipelines per system: particle spheres, spring lines (<code>GL_LINES</code>), cloth faces, wireframe overlay, debug axis</li>
+              <li>Wind: <code>windDirection × windIntensity</code> force term in <code>evalF</code>; <code>updateWindOscillation(dt)</code> drives sinusoidal direction change for oscillating wind (extra credit)</li>
+              <li>Per-system ImGui panels: integrator radio, timestep slider, wind toggles, wireframe/particle/spring toggles, RGB picker, reset button</li>
+            </ul>
+          </div>
+
+          <div class="code-head"><span class="code-lang">C++ — TimeStepper Interface &amp; RK4</span><span class="code-file">TimeStepper.h / .cpp</span></div>
+<pre><span class="cm">// Pure virtual — all integrators share this contract</span>
+<span class="kw">virtual void</span> <span class="fn">takeStep</span>(ParticleSystem* ps, <span class="kw">float</span> dt) = <span class="num">0</span>;
+
+<span class="cm">// RK4 — 4th order, 4 evalF calls per step</span>
+<span class="kw">void</span> RK4::<span class="fn">takeStep</span>(ParticleSystem* ps, <span class="kw">float</span> dt) {
+    <span class="kw">auto</span> s  = ps-><span class="fn">getState</span>();
+    <span class="kw">auto</span> k1 = ps-><span class="fn">evalF</span>(s);
+    <span class="kw">auto</span> k2 = ps-><span class="fn">evalF</span>(s + (dt*<span class="num">0.5f</span>) * k1);  <span class="cm">// midpoint estimate 1</span>
+    <span class="kw">auto</span> k3 = ps-><span class="fn">evalF</span>(s + (dt*<span class="num">0.5f</span>) * k2);  <span class="cm">// midpoint estimate 2</span>
+    <span class="kw">auto</span> k4 = ps-><span class="fn">evalF</span>(s + dt         * k3);  <span class="cm">// endpoint estimate</span>
+    <span class="cm">// weighted average — centre samples count double</span>
+    ps-><span class="fn">setState</span>(s + (dt/<span class="num">6.0f</span>)*(k1 + <span class="num">2</span>*k2 + <span class="num">2</span>*k3 + k4));
+}</pre>
+
+          <div class="acard-note">
+            <div class="note-label">⚡ Honest Notes</div>
+            <p>A <code>std::vector</code> constructor called with 2 arguments where 3 were expected in <code>PendulumSystem.cpp</code> blocks clean compilation — localised and documented. The cloth renders and animates; extreme wind values cause numerical instability from insufficient velocity damping. Given more time: fix the constructor mismatch, add per-system damping controls, isolate wind forces to eliminate jitter.</p>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- /assignments -->
+  </div>
+</section>
+
+<div class="zone-div" data-d="// 04 skills"></div>
+
+<!-- ══ SKILLS ════════════════════════════════════════════ -->
+<section class="section">
+  <div class="container">
+    <div class="rv">
+      <p class="eyebrow">// 04 — Skills Demonstrated</p>
+      <h2 class="section-title">What building this<br>actually teaches</h2>
+      <div class="section-rule"></div>
+      <p style="color:var(--mist);max-width:580px;margin-bottom:1.8rem;font-size:.95rem">Writing a pipeline without an engine forces fluency in areas that engine abstractions hide completely.</p>
+    </div>
+
+    <div class="skills-list">
+      <div class="skill-row rv">
+        <div>
+          <div class="skill-name">OpenGL Core</div>
+          <div class="skill-where">A0 – A5, all files</div>
+        </div>
+        <div class="skill-desc">Direct use of <code>glGenVertexArrays</code>, <code>glBindBuffer</code>, <code>glBufferData</code>, <code>glVertexAttribPointer</code>, <code>glEnableVertexAttribArray</code>, <code>glDrawElements</code>, <code>glDrawArrays</code>. Multiple separate VAO/VBO/EBO triples per scene — mesh, spring lines, particle spheres, cloth faces, wireframe — each owned and cleaned up by its system.</div>
+      </div>
+      <div class="skill-row rv" style="transition-delay:40px">
+        <div>
+          <div class="skill-name">GLSL Shaders</div>
+          <div class="skill-where">A0 – A5</div>
+        </div>
+        <div class="skill-desc">Authored vertex and fragment shaders from scratch across all assignments. Progressed from flat colour in A0 to Phong with normal-matrix correction in A1 to full ambient/diffuse/specular with multiple light uniforms in A2+. Normal correction via <code>mat3(transpose(inverse(model)))</code> written and understood, not copied.</div>
+      </div>
+      <div class="skill-row rv" style="transition-delay:80px">
+        <div>
+          <div class="skill-name">GLM Math</div>
+          <div class="skill-where">A1 – A5</div>
+        </div>
+        <div class="skill-desc"><code>glm::mat4</code> MVP stacks with <code>rotate / translate / scale</code>; <code>lookAt / perspective / ortho</code>; <code>cross / normalize / dot</code> for normals and Frenet frames; <code>yawPitchRoll</code> for joint rotations; <code>inverse</code> for bind-pose matrices; <code>mix</code> for colour interpolation.</div>
+      </div>
+      <div class="skill-row rv" style="transition-delay:120px">
+        <div>
+          <div class="skill-name">Parametric Curves</div>
+          <div class="skill-where">A3 — Curve.h/cpp</div>
+        </div>
+        <div class="skill-desc">Bezier evaluation using Bernstein polynomials with hand-implemented binomial coefficient. B-spline evaluation. Frenet-Serret frame (T, N, B) computed via finite-difference tangent and cross-product at each tessellation sample. Convex-hull containment guarantees and the <code>3n+1</code> control-point constraint validated with clean diagnostics.</div>
+      </div>
+      <div class="skill-row rv" style="transition-delay:160px">
+        <div>
+          <div class="skill-name">Skeletal Systems</div>
+          <div class="skill-where">A4 — Joint / SkeletalModel</div>
+        </div>
+        <div class="skill-desc">Joint tree from JSON. Each joint stores local mat4, bind-pose inverse, and current-frame world transform. <code>MatrixStack</code> push/pop accumulates world transforms without modifying stored matrices. <code>setJointTransform</code> uses <code>glm::yawPitchRoll</code> composed with stored translation. Vertex weights loaded from <code>.attach</code> files.</div>
+      </div>
+      <div class="skill-row rv" style="transition-delay:200px">
+        <div>
+          <div class="skill-name">Physics Simulation</div>
+          <div class="skill-where">A5 — ParticleSystem</div>
+        </div>
+        <div class="skill-desc">Generic ODE framework: flat <code>std::vector&lt;glm::vec3&gt;</code> state with interleaved position/velocity. Pure-virtual <code>evalF</code> returns derivatives. Spring force model: <code>F = −k(|d|−L₀)·d̂ − c·v</code>. Four integrators — ForwardEuler O(dt²), Trapezoid, Midpoint, RK4 O(dt⁵) — operate generically, swappable at runtime from ImGui.</div>
+      </div>
+      <div class="skill-row rv" style="transition-delay:240px">
+        <div>
+          <div class="skill-name">C++ Architecture</div>
+          <div class="skill-where">A2 – A5</div>
+        </div>
+        <div class="skill-desc">Singleton with deleted copy/assignment, private constructor, static instance. <code>Shape</code> polymorphic base with pure-virtual <code>draw(GLuint)</code>. <code>ParticleSystem : Shape</code> inheritance chain. <code>TimeStepper</code> factory method. Manual heap management — <code>ShapeManager</code> owns and <code>delete</code>s <code>Shape*</code> pointers. Virtual destructor on all base classes.</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+</main>
+
+<footer>
+  <p class="footer-text">designed &amp; built by <span class="footer-acc">alyssa barrientos</span> · alyartbar · <span id="yr"></span></p>
+</footer>
+
+<script>
+'use strict';
+document.getElementById('yr').textContent = new Date().getFullYear();
+
+/* ── Starfield ─────────────────────────────────────────── */
+(function () {
+  const c = document.getElementById('stars');
+  if (!c) return;
+  const x = c.getContext('2d');
+  let W, H, S = [];
+  const rs = () => { W = c.width = innerWidth; H = c.height = innerHeight; };
+  const mk = () => ({ x: Math.random()*W, y: Math.random()*H, r: Math.random()*1.1+.2, a: Math.random()*.45+.08, sp: Math.random()*.12+.02, dr: (Math.random()-.5)*.025, ph: Math.random()*Math.PI*2 });
+  rs(); S = Array.from({ length: 130 }, mk); addEventListener('resize', rs);
+  let t = 0;
+  (function d() {
+    x.clearRect(0,0,W,H); t += .007;
+    for (const s of S) {
+      s.y -= s.sp; s.x += s.dr;
+      if (s.y < -2) { s.y = H+2; s.x = Math.random()*W; }
+      if (s.x < -2) s.x = W+2;
+      if (s.x > W+2) s.x = -2;
+      const a = s.a*(.7+.3*Math.sin(t*1.4+s.ph));
+      x.beginPath(); x.arc(s.x,s.y,s.r,0,Math.PI*2);
+      x.fillStyle = `rgba(232,244,248,${a})`; x.fill();
+    }
+    requestAnimationFrame(d);
+  })();
+})();
+
+/* ── Custom cursor — only on pointer devices ───────────── */
+(function () {
+  // matchMedia pointer:fine = real mouse/trackpad
+  if (!window.matchMedia('(pointer: fine)').matches) return;
+  document.body.classList.add('has-cursor');
+  const r = document.getElementById('cursor-ring'), d = document.getElementById('cursor-dot');
+  let mx = -200, my = -200, rx = -200, ry = -200;
+  addEventListener('mousemove', e => { mx = e.clientX; my = e.clientY; });
+  (function t() {
+    d.style.left = mx+'px'; d.style.top = my+'px';
+    rx += (mx-rx)*.14; ry += (my-ry)*.14;
+    r.style.left = rx+'px'; r.style.top = ry+'px';
+    requestAnimationFrame(t);
+  })();
+  const sel = 'a,button,.acard,.btn,.skill-row,.stat,.oc';
+  addEventListener('mouseover', e => { if (e.target.closest(sel)) r.classList.add('h'); });
+  addEventListener('mouseout',  e => { if (e.target.closest(sel)) r.classList.remove('h'); });
+})();
+
+/* ── Nav scroll ────────────────────────────────────────── */
+(function () {
+  const n = document.getElementById('site-nav');
+  if (!n) return;
+  const u = () => n.classList.toggle('scrolled', scrollY > 40);
+  addEventListener('scroll', u, { passive: true }); u();
+})();
+
+/* ── Scroll reveal ─────────────────────────────────────── */
+(function () {
+  const els = document.querySelectorAll('.rv');
+  if (!els.length) return;
+  const ob = new IntersectionObserver(entries => {
+    entries.forEach(e => {
+      if (e.isIntersecting) {
+        const delay = parseInt(e.target.style.transitionDelay) || 0;
+        setTimeout(() => e.target.classList.add('on'), delay);
+        ob.unobserve(e.target);
+      }
+    });
+  }, { threshold: .07 });
+  els.forEach(el => ob.observe(el));
+})();
+</script>
+</body>
+</html>

@@ -366,6 +366,54 @@ code { font-family: var(--font-mono); font-size: 0.82rem; background: var(--c-tr
 .future-title { font-family: var(--font-display); font-size: 1.1rem; font-weight: 600; color: var(--c-star); margin-bottom: 0.5rem; }
 .future-card p { color: var(--c-mist); font-size: 0.84rem; line-height: 1.65; }
 
+/* ── SPRINT TIMELINE ── */
+.sprint-timeline { display: flex; flex-direction: column; gap: 0; }
+.sprint-block { display: grid; grid-template-columns: 64px 1fr; gap: var(--space-md); padding: var(--space-lg) 0; border-bottom: 1px solid var(--c-depth); }
+.sprint-block:first-child { padding-top: 0; }
+.sprint-block:last-child { border-bottom: none; }
+
+.sprint-meta { display: flex; flex-direction: column; align-items: center; gap: 0; padding-top: 0.25rem; }
+.sprint-num {
+  width: 44px; height: 44px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-family: var(--font-mono); font-size: 0.75rem; font-weight: 500; letter-spacing: 0.05em;
+  background: var(--c-abyss); border: 1px solid var(--c-biolume); color: var(--c-biolume);
+  flex-shrink: 0;
+}
+.sprint-num.s2n { border-color: var(--c-nebula); color: var(--c-nebula); }
+.sprint-num.s3n { border-color: var(--c-amber);  color: var(--c-amber); }
+.sprint-num.s4n { border-color: var(--c-thermal); color: var(--c-thermal); }
+.sprint-connector { flex: 1; width: 1px; background: linear-gradient(to bottom, var(--c-depth), transparent); margin-top: 0.6rem; min-height: 40px; }
+
+.sprint-content { min-width: 0; }
+.sprint-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 1rem; margin-bottom: 1rem; flex-wrap: wrap; }
+.sprint-label { font-family: var(--font-mono); font-size: var(--text-micro); letter-spacing: 0.15em; text-transform: uppercase; color: var(--c-ghost); margin-bottom: 0.25rem; }
+.sprint-title { font-family: var(--font-display); font-size: 1.5rem; font-weight: 600; color: var(--c-star); line-height: 1.2; }
+.sprint-badge {
+  font-family: var(--font-mono); font-size: var(--text-micro); letter-spacing: 0.1em; text-transform: uppercase;
+  padding: 0.25rem 0.75rem; border-radius: var(--radius-sm); flex-shrink: 0; margin-top: 0.2rem;
+}
+.sprint-badge.s1 { background: rgba(61,255,208,0.08);  color: var(--c-biolume); border: 1px solid rgba(61,255,208,0.2); }
+.sprint-badge.s2 { background: rgba(167,139,250,0.08); color: var(--c-nebula);  border: 1px solid rgba(167,139,250,0.2); }
+.sprint-badge.s3 { background: rgba(240,160,80,0.08);  color: var(--c-amber);   border: 1px solid rgba(240,160,80,0.2); }
+.sprint-badge.s4 { background: rgba(31,138,122,0.08);  color: var(--c-thermal); border: 1px solid rgba(31,138,122,0.2); }
+
+.sprint-desc { color: var(--c-mist); font-size: 0.92rem; line-height: 1.75; margin-bottom: var(--space-md); max-width: 760px; }
+
+.sprint-phases { display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-sm); margin-bottom: var(--space-md); }
+.sprint-phase { background: var(--c-abyss); border: 1px solid var(--c-depth); border-radius: var(--radius-md); padding: 1.1rem 1.2rem; transition: border-color var(--dur-ui); }
+.sprint-phase:hover { border-color: var(--c-current); }
+.sprint-phase-label { font-family: var(--font-mono); font-size: var(--text-micro); letter-spacing: 0.15em; text-transform: uppercase; color: var(--c-ghost); margin-bottom: 0.5rem; }
+.sprint-phase p { color: var(--c-mist); font-size: 0.82rem; line-height: 1.65; }
+
+.sprint-deliverables { display: flex; flex-wrap: wrap; gap: 0.4rem; }
+.sprint-del {
+  font-family: var(--font-mono); font-size: var(--text-micro); letter-spacing: 0.06em;
+  color: var(--c-ghost); border: 1px solid var(--c-depth); border-radius: var(--radius-sm);
+  padding: 0.18rem 0.55rem; transition: color var(--dur-micro), border-color var(--dur-micro);
+}
+.sprint-del:hover { color: var(--c-mist); border-color: var(--c-current); }
+
 /* ── FOOTER ── */
 .site-footer { position: relative; z-index: 2; padding: 2rem 3rem; border-top: 1px solid var(--c-depth); text-align: center; margin-top: var(--space-xl); }
 .footer-text { font-family: var(--font-mono); font-size: var(--text-micro); letter-spacing: 0.2em; color: var(--c-ghost); text-transform: lowercase; }
@@ -384,6 +432,8 @@ code { font-family: var(--font-mono); font-size: 0.82rem; background: var(--c-tr
   .role-banner { grid-template-columns: 1fr; }
   .skill-doc-row { grid-template-columns: 150px 1fr; }
   .ci-check-grid { grid-template-columns: 1fr; }
+  .sprint-phases { grid-template-columns: 1fr; }
+  .sprint-block { grid-template-columns: 44px 1fr; gap: 1rem; }
 }
 @media (max-width: 600px) {
   .stat-row { grid-template-columns: 1fr 1fr; }
@@ -723,13 +773,220 @@ code { font-family: var(--font-mono); font-size: 0.82rem; background: var(--c-tr
     </div>
   </section>
 
-  <div class="zone-div" data-depth="// 04 my role"></div>
+  <div class="zone-div" data-depth="// 04 sprint cycles"></div>
+
+  <!-- ══════════ SPRINT CYCLES ══════════ -->
+  <section class="section">
+    <div class="container">
+      <div class="reveal">
+        <p class="eyebrow">// 04 — Sprint Cycles</p>
+        <h2 class="section-title">Four sprints.<br>One semester.</h2>
+        <div class="section-rule" aria-hidden="true"></div>
+        <p style="color:var(--c-mist);max-width:680px;margin-bottom:var(--space-lg);">
+          The project ran through CPSC 490 (Fall) and 491 (Spring) as a two-semester capstone.
+          Each sprint had a distinct phase goal — the work shifted from architecture and foundation
+          in Sprint 1, through implementation and stabilisation, into a full live-demo prototype by Sprint 4.
+          Adrian Bautista withdrew after Sprint 1, leaving Alyssa and Riya as the two-person core through Sprint 3.
+        </p>
+      </div>
+
+      <!-- Sprint timeline -->
+      <div class="sprint-timeline">
+
+        <!-- S1 -->
+        <div class="sprint-block reveal">
+          <div class="sprint-meta">
+            <div class="sprint-num">01</div>
+            <div class="sprint-connector"></div>
+          </div>
+          <div class="sprint-content">
+            <div class="sprint-header">
+              <div>
+                <div class="sprint-label">Sprint 1 · Fall Semester</div>
+                <div class="sprint-title">Architecture &amp; Foundation</div>
+              </div>
+              <div class="sprint-badge s1">3 contributors</div>
+            </div>
+            <p class="sprint-desc">
+              The first sprint was a planning and foundation sprint. The core goal was to define what the system needed to do, design the architecture that could support it, and get a working Unity AR project off the ground. No full detection pipeline existed yet — this sprint was about proving the approach was feasible and making the key technical decisions that would govern every sprint that followed.
+            </p>
+            <div class="sprint-phases">
+              <div class="sprint-phase">
+                <div class="sprint-phase-label">Architecture</div>
+                <p>Designed the four-stage pipeline — AR capture → MediaPipe detection → LLM query → spatial anchor display. Documented the subsystem and provider model for AR Foundation: XRSessionSubsystem, XRCameraSubsystem, XRPlaneSubsystem, and XRImageTrackingSubsystem mapped to ARKit (iOS) and ARCore/OpenXR (Quest) providers.</p>
+              </div>
+              <div class="sprint-phase">
+                <div class="sprint-phase-label">Unity Setup</div>
+                <p>Configured Unity 2022.3 with the AR Foundation Plugin. Wired subsystems to platform providers. Set Player Settings for iOS 12+ and Android 8+ AR compatibility. Organised the project folder and scene hierarchy for cross-platform builds. Identified the Unity → Xcode build error that would be resolved in Sprint 2.</p>
+              </div>
+              <div class="sprint-phase">
+                <div class="sprint-phase-label">Requirements</div>
+                <p>Established the performance targets the whole project would be held to: ≥5 FPS detection rate, &lt;100ms LLM API response time, and support for 10+ concurrent object detections. Defined compatibility requirements (Unity 2022.3+, iOS 12+, Android 8+) and the secure data handling model for API keys and camera data.</p>
+              </div>
+              <div class="sprint-phase">
+                <div class="sprint-phase-label">CI/CD Foundation</div>
+                <p>Established the GitHub feature branch workflow requiring at least one reviewer before any merge to main. Laid the repo structure and .gitignore baseline. Defined the four CI/CD stages: unit/child tests, platform-specific builds (iOS/Android), automation, and contribution monitoring.</p>
+              </div>
+            </div>
+            <div class="sprint-deliverables">
+              <span class="sprint-del">AR Foundation configured</span>
+              <span class="sprint-del">Subsystem + provider layer</span>
+              <span class="sprint-del">Player Settings for iOS/Android</span>
+              <span class="sprint-del">Performance targets defined</span>
+              <span class="sprint-del">Branch + review workflow</span>
+              <span class="sprint-del">Xcode error identified</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- S2 -->
+        <div class="sprint-block reveal" data-delay="40">
+          <div class="sprint-meta">
+            <div class="sprint-num s2n">02</div>
+            <div class="sprint-connector"></div>
+          </div>
+          <div class="sprint-content">
+            <div class="sprint-header">
+              <div>
+                <div class="sprint-label">Sprint 2 · Fall Semester</div>
+                <div class="sprint-title">Implementation &amp; iOS Stabilisation</div>
+              </div>
+              <div class="sprint-badge s2">2 contributors</div>
+            </div>
+            <p class="sprint-desc">
+              Adrian withdrew from the class, leaving Alyssa and Riya as the two-person team. Sprint 2 was an implementation sprint — Riya built the MediaPipe integration and LLM backend, while Alyssa owned the AR rendering layer and iOS build pipeline. The goal was to get a working end-to-end prototype: camera detects an object, LLM is queried, response is anchored in AR. The sprint also focused specifically on ARKit, making iOS the primary target platform.
+            </p>
+            <div class="sprint-phases">
+              <div class="sprint-phase">
+                <div class="sprint-phase-label">MediaPipe + LLM</div>
+                <p>Riya integrated the MediaPipe Unity Plugin for on-device object and hand detection. Built the AOI Integration Manager to package detection labels into structured LLM prompts and fire them via UnityWebRequest. The backend was evaluated against Google PaLI and LLaMA as candidate models.</p>
+              </div>
+              <div class="sprint-phase">
+                <div class="sprint-phase-label">AR Rendering Fixes</div>
+                <p>Debugged URP transparency and background rendering for iOS — the black screen and yellow background bugs were both traced to camera clear flag configuration under Unity's URP pipeline. Fixed scene lighting resets that occurred after merges. Resolved binary merge conflict in MainScene.unity. Focused on ARKit as the sprint's primary platform target.</p>
+              </div>
+              <div class="sprint-phase">
+                <div class="sprint-phase-label">iOS Builds</div>
+                <p>Committed iterative iOS device builds throughout the sprint to validate AR rendering on physical hardware. Defined test plans for AR object placement, build loading, material rendering, camera permissions, and object visibility across iOS and Android targets. Ran manual test cases for scene load, URP transparency, and lighting consistency.</p>
+              </div>
+              <div class="sprint-phase">
+                <div class="sprint-phase-label">CI/CD Expansion</div>
+                <p>Riya expanded the GitHub Actions pipeline to 288 lines — adding multi-platform build support (Windows, macOS, Linux), automated testing integration, quality gates, security scanning, caching strategy, and deployment automation. Alyssa ensured project paths and .gitignore were correct to prevent build clutter, and verified local reproducibility before pipeline runs.</p>
+              </div>
+            </div>
+            <div class="sprint-deliverables">
+              <span class="sprint-del">MediaPipe on-device detection</span>
+              <span class="sprint-del">LLM backend via REST</span>
+              <span class="sprint-del">Black screen + yellow bg fixed</span>
+              <span class="sprint-del">MainScene.unity merge resolved</span>
+              <span class="sprint-del">iOS ARKit builds running</span>
+              <span class="sprint-del">CI pipeline to 288 lines</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- S3 -->
+        <div class="sprint-block reveal" data-delay="80">
+          <div class="sprint-meta">
+            <div class="sprint-num s3n">03</div>
+            <div class="sprint-connector"></div>
+          </div>
+          <div class="sprint-content">
+            <div class="sprint-header">
+              <div>
+                <div class="sprint-label">Sprint 3 · Spring Semester</div>
+                <div class="sprint-title">Stability, Tooling &amp; Polish</div>
+              </div>
+              <div class="sprint-badge s3">2 contributors</div>
+            </div>
+            <p class="sprint-desc">
+              With the core pipeline working, Sprint 3 shifted focus to reliability, developer tooling, and anchor quality. The goal was to make the system robust enough for a live demo — no GC spikes, no coroutine timing bugs, no CI surprises. Alyssa built the in-editor debug panel and refactored the anchor lifecycle. She also expanded AOISetupHelper to auto-initialise the full XR stack, and added her own CI/CD quality gates specifically targeting Unity's failure modes.
+            </p>
+            <div class="sprint-phases">
+              <div class="sprint-phase">
+                <div class="sprint-phase-label">Debug Tooling</div>
+                <p>Built UIAnchorDebugPanel — an in-editor context menu tool with buttons to run deterministic anchor smoke tests, count active anchors, and clear the pool. This meant the anchor pipeline could be validated without needing a physical AR device, which significantly accelerated iteration time between code changes and test results.</p>
+              </div>
+              <div class="sprint-phase">
+                <div class="sprint-phase-label">Anchor Refactor</div>
+                <p>Refactored UIAnchor to cleanly handle the full lifecycle: fade-in, fade-out, pulse animation, click callbacks, and UpdateAnchor() for dynamic detection refreshes. Fixed coroutine timing conflicts that caused anchors to persist past their intended lifetime. Object pooling verified to eliminate GC allocation spikes during sustained detection sessions.</p>
+              </div>
+              <div class="sprint-phase">
+                <div class="sprint-phase-label">XR Stack Auto-Setup</div>
+                <p>Expanded AOISetupHelper so the complete XR environment installs automatically on scene load — auto-creating ARSession, ARSessionOrigin, AR Camera, world-space Canvas, and required Prefabs. Eliminated the manual per-machine setup friction that had caused inconsistent environments between team members. Validated camera permissions and anchor pool creation as part of the auto-init flow.</p>
+              </div>
+              <div class="sprint-phase">
+                <div class="sprint-phase-label">CI/CD Extensions</div>
+                <p>Added pre-commit C# formatter, script compilation validation, missing .meta file detection, and pipeline logging. Wired a smoke test to fail the CI build if any exception fires during scene initialisation — turning a manual debugging step into an automated gate. These checks targeted the specific Unity failure modes (missing meta files, Safe Mode blockers) the team had already encountered.</p>
+              </div>
+            </div>
+            <div class="sprint-deliverables">
+              <span class="sprint-del">UIAnchorDebugPanel</span>
+              <span class="sprint-del">UIAnchor lifecycle refactor</span>
+              <span class="sprint-del">AOISetupHelper auto-init XR stack</span>
+              <span class="sprint-del">GC allocations eliminated</span>
+              <span class="sprint-del">Pre-commit formatter + .meta checks</span>
+              <span class="sprint-del">Smoke test CI gate</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- S4 -->
+        <div class="sprint-block reveal" data-delay="120">
+          <div class="sprint-meta">
+            <div class="sprint-num s4n">04</div>
+          </div>
+          <div class="sprint-content">
+            <div class="sprint-header">
+              <div>
+                <div class="sprint-label">Sprint 4 · Spring Semester · Live Demo</div>
+                <div class="sprint-title">Scavenger Hunt Pivot &amp; Live Demo</div>
+              </div>
+              <div class="sprint-badge s4">5 contributors</div>
+            </div>
+            <p class="sprint-desc">
+              Three new contributors joined for the final sprint. Rather than extending the general-purpose detection overlay, the team pivoted to a concrete demo format: an AR scavenger hunt driven by the LLM. The LLM generates a context-appropriate item list for the physical environment, the player taps detected objects to match them, and AR markers spawn on detected surfaces to indicate found items. Alyssa's role shifted to unblocking the team — resolving the Unity Safe Mode startup failures that prevented the project from running, wiring the scene flow for the UI, and reviewing every integration PR before the live class demo.
+            </p>
+            <div class="sprint-phases">
+              <div class="sprint-phase">
+                <div class="sprint-phase-label">Scavenger Hunt Systems</div>
+                <p>Riya integrated TapToDetectionFeeder, DetectorBridge, MediaPipeToDetectorBridge, ScavengerHuntManager, and ScavengerHuntUIHelper into a full tap → detect → match → highlight → register → UI update flow. David built the LLM item list generator (5–10 items, classroom-appropriate), LLM manager, ascending timer, and start/playing/end screens. Mohamed handled session lifecycle and interaction event handling. Marco built the offline generator, AR marker spawner, AR placement manager via raycasts, and bounce animation.</p>
+              </div>
+              <div class="sprint-phase">
+                <div class="sprint-phase-label">UI &amp; Scene Flow</div>
+                <p>Alyssa implemented the Entry/Main Menu screen and gameplay navigation, added Exit/Quit behavior, and repaired the scene management connections across menu → gameplay → end screen — correcting Build Settings ordering and rewiring inspector references that had broken during the team's integration merges.</p>
+              </div>
+              <div class="sprint-phase">
+                <div class="sprint-phase-label">Compilation Unblocking</div>
+                <p>Identified and fixed the Unity Safe Mode startup failures caused by invalid class structures, misplaced [SerializeField] attributes, and missing namespace/type references from integration merges. Also identified Windows path-length constraints that prevented some teammates from cloning and building, and applied workflow changes to resolve them — restoring a runnable project for the full team before the demo.</p>
+              </div>
+              <div class="sprint-phase">
+                <div class="sprint-phase-label">Live Demo</div>
+                <p>The final demo ran as a live classroom presentation — a physical AR scavenger hunt where the LLM generated a context-appropriate item list for the room, players tapped objects to detect and match them, and AR markers appeared on detected surfaces. 100% CI pass rate maintained through the sprint. 13 new test cases (TC-019 through TC-031) added and all passing.</p>
+              </div>
+            </div>
+            <div class="sprint-deliverables">
+              <span class="sprint-del">LLM item list generator</span>
+              <span class="sprint-del">Tap → detect → match flow</span>
+              <span class="sprint-del">AR marker spawner</span>
+              <span class="sprint-del">Menu + scene flow UI</span>
+              <span class="sprint-del">Safe Mode compilation fixed</span>
+              <span class="sprint-del">100% CI pass · 13 new TCs</span>
+            </div>
+          </div>
+        </div>
+
+      </div><!-- end sprint-timeline -->
+    </div>
+  </section>
+
+  <div class="zone-div" data-depth="// 05 my role"></div>
 
   <!-- ══════════ MY ROLE ══════════ -->
   <section id="my-role" class="section">
     <div class="container">
       <div class="reveal">
-        <p class="eyebrow">// 04 — My Role</p>
+        <p class="eyebrow">// 05 — My Role</p>
         <h2 class="section-title">Integration engineer.<br>The glue of the project.</h2>
         <div class="section-rule" aria-hidden="true"></div>
         <p style="color:var(--c-mist);max-width:660px;margin-bottom:var(--space-md);">
@@ -836,13 +1093,13 @@ code { font-family: var(--font-mono); font-size: 0.82rem; background: var(--c-tr
     </div>
   </section>
 
-  <div class="zone-div" data-depth="// 05 qa"></div>
+  <div class="zone-div" data-depth="// 06 qa"></div>
 
   <!-- ══════════ QA ══════════ -->
   <section class="section">
     <div class="container">
       <div class="reveal">
-        <p class="eyebrow">// 05 — Quality Assurance</p>
+        <p class="eyebrow">// 06 — Quality Assurance</p>
         <h2 class="section-title">Testing a system<br>you can't easily mock.</h2>
         <div class="section-rule" aria-hidden="true"></div>
         <p style="color:var(--c-mist);max-width:680px;margin-bottom:var(--space-md);">
@@ -931,13 +1188,13 @@ code { font-family: var(--font-mono); font-size: 0.82rem; background: var(--c-tr
     </div>
   </section>
 
-  <div class="zone-div" data-depth="// 06 ci/cd"></div>
+  <div class="zone-div" data-depth="// 07 ci/cd"></div>
 
   <!-- ══════════ CI/CD ══════════ -->
   <section class="section">
     <div class="container">
       <div class="reveal">
-        <p class="eyebrow">// 06 — CI / CD Pipeline</p>
+        <p class="eyebrow">// 07 — CI / CD Pipeline</p>
         <h2 class="section-title">Automated gates<br>for a Unity project.</h2>
         <div class="section-rule" aria-hidden="true"></div>
         <p style="color:var(--c-mist);max-width:680px;margin-bottom:var(--space-md);">
@@ -1054,13 +1311,13 @@ code { font-family: var(--font-mono); font-size: 0.82rem; background: var(--c-tr
     </div>
   </section>
 
-  <div class="zone-div" data-depth="// 07 team"></div>
+  <div class="zone-div" data-depth="// 08 team"></div>
 
   <!-- ══════════ TEAM ══════════ -->
   <section class="section">
     <div class="container">
       <div class="reveal">
-        <p class="eyebrow">// 07 — Team</p>
+        <p class="eyebrow">// 08 — Team</p>
         <h2 class="section-title">Started as 3.<br>Grew to 5 for the demo.</h2>
         <div class="section-rule" aria-hidden="true"></div>
         <p style="color:var(--c-mist);max-width:640px;margin-bottom:var(--space-md);">
@@ -1106,13 +1363,13 @@ code { font-family: var(--font-mono); font-size: 0.82rem; background: var(--c-tr
     </div>
   </section>
 
-  <div class="zone-div" data-depth="// 08 future"></div>
+  <div class="zone-div" data-depth="// 09 future"></div>
 
   <!-- ══════════ FUTURE WORK ══════════ -->
   <section class="section">
     <div class="container">
       <div class="reveal">
-        <p class="eyebrow">// 08 — Future Work</p>
+        <p class="eyebrow">// 09 — Future Work</p>
         <h2 class="section-title">Where this goes<br>from here.</h2>
         <div class="section-rule" aria-hidden="true"></div>
         <p style="color:var(--c-mist);max-width:640px;margin-bottom:var(--space-md);">
