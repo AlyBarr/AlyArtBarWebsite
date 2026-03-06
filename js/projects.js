@@ -17,7 +17,7 @@
 
   featuredProjects.forEach((p, i) => {
     const isReversed = i % 2 !== 0;
-    const hasImage   = p.image && p.image.trim() !== '';
+    //const hasImage   = p.image && p.image.trim() !== '';
 
     const row = document.createElement('div');
     row.className = `featured-row${isReversed ? ' reversed' : ''} reveal`;
