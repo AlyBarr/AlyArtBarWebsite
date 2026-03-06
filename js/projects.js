@@ -25,12 +25,14 @@
     row.innerHTML = `
       <div class="featured-image">
         ${hasImage
+          /* ═══════════════════════════════════════════
           ? `<img src="${p.image}" alt="${p.title}" loading="lazy" />
              <div class="featured-image-overlay"></div>`
           : `<div class="featured-placeholder">
                <span class="placeholder-icon">⬡</span>
                <span class="placeholder-text">image placeholder</span>
              </div>`
+          ═══════════════════════════════════════════ */
         }
       </div>
       <div class="featured-copy">
