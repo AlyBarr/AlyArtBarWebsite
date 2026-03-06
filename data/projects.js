@@ -26,7 +26,7 @@ const PROJECTS = [
       "Graceful degradation - runs in demo mode without Maya, and falls back to a plain-text USD stub if usd-core is missing"
     ],
     tools: ["Python", "Maya API", "PySide2", "OpenUSD", "Git"],
-    image: "",
+    //image: "",
     imageAlt: "Maya Pipeline Tools",
     links: [
       { label: "GitHub", url: "https://github.com/AlyBarr/AssetMayaTooling" },
@@ -45,7 +45,7 @@ const PROJECTS = [
         "Root-space normalization, temporal resampling to 60 frames, and velocity features extracted from KARD dataset"
       ],
       tools: ["Python", "Scikit-learn", "Random Forest", "PCA", "NumPy", "Pandas", "Matplotlib"],
-      image: "",
+      //image: "",
       imageAlt: "ML Rig Predictor - skeletal action classification",
       links: [
         { label: "GitHub", url: "https://github.com/AlyBarr/VirtualProdMLPredict"},
@@ -64,7 +64,7 @@ const PROJECTS = [
         "Sprint 4 pivot: LLM-generated AR scavenger hunt with tap-to-detect input, surface-placed AR markers, session lifecycle, and 100% CI pass rate across 31 test cases"
       ],
       tools: ["Unity 2022.3", "C# / URP", "AR Foundation", "ARKit", "ARCore", "MediaPipe", "LLM API (REST)", "GitHub Actions", "Xcode", "Meta Quest 3"],
-      image: "",
+      //image: "",
       imageAlt: "AOI XR - AR object intelligence with spatial anchors",
       links: [
         { label: "GitHub", url: "https://github.com/bautista-aa/Augmented-Object-Intelligence-with-XR-Objects" },
@@ -83,7 +83,7 @@ const PROJECTS = [
         "Generic ODE physics framework: pure-virtual evalF(state) drives pendulum, chain, and NxN cloth simulations through ForwardEuler, Trapezoid, Midpoint, and RK4 integrators swappable at runtime"
       ],
       tools: ["C++17", "OpenGL 3.3", "GLSL", "GLM", "GLFW", "GLAD", "Dear ImGui", "OBJ Parser"],
-      image: "",
+      //image: "",
       imageAlt: "Raytracer Dev - C++ OpenGL graphics engine with cloth simulation",
       links: [
         { label: "GitHub", url: "https://github.com/AlyBarr/RaytracerDev" },
